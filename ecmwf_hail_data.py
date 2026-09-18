@@ -68,7 +68,7 @@ def download_ecmwf_hail_fields():
     )
     surface_target = Path("data/ecmwf_surface_wind_0_72h.grib2")
     print("Downloading ECMWF 10-m surface wind...")
-        client.retrieve(
+    client.retrieve(
         type="fc",
         stream="oper",
         step=STEPS,
