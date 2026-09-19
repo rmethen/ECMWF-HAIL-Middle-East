@@ -28,6 +28,7 @@ def hail_potential_v2(
     lapse_700_500,
     t500_c,
     mixing_ratio,
+    li850,
 ):
     """
     Calculate experimental hail potential from 0–100.
@@ -64,16 +65,17 @@ def hail_potential_v2(
 
     # Low-level moisture
     moisture = scale(mixing_ratio, 5.0, 13.0)
-
+    li = inverse_scale(li850, -6.0, 2.0)
     # V2 weighting
     score = (
-        0.25 * hgl
-        + 0.20 * wbz
-        + 0.20 * shear
-        + 0.12 * instability
-        + 0.10 * lapse
-        + 0.07 * t500
+        0.23 * hgl
+        + 0.18 * wbz
+        + 0.18 * shear
+        + 0.10 * instability
+        + 0.09 * lapse
+        + 0.06 * t500
         + 0.06 * moisture
+        + 0.10 * li
     )
 
     return np.clip(score * 100.0, 0.0, 100.0)
