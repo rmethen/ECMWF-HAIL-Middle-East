@@ -5,8 +5,8 @@ Process ECMWF GRIB2 fields for Experimental Hail Potential Index V2.
 from pathlib import Path
 import numpy as np
 import xarray as xr
-
-
+from metpy.calc import dewpoint_from_specific_humidity, parcel_profile, lifted_index
+from metpy.units import units
 GRIB_FILE = Path("data/ecmwf_hail_0_72h.grib2")
 OUTPUT_FILE = Path("data/hail_diagnostics.npz")
 
@@ -101,9 +101,11 @@ def main():
     # q kg/kg -> approximate g/kg diagnostic
     # -------------------------------------------------
 
-    q850 = get_level(q, 850)
-    moisture_850 = q850 * 1000.0
-
+    q850 = get_level(q, 850) * units("kg/kg")
+    moisture_850 = q850.magnitude * 1000.0
+    t850 = get_level(t, 850) * units.kelvin
+    p850 = 850.0 * units.hPa
+    td850 = dewpoint_from_specific_humidity(p850, t850, q850)
     # Coordinates
     latitude = t500_c["latitude"].values
     longitude = t500_c["longitude"].values
