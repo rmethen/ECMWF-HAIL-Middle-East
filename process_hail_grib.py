@@ -150,13 +150,13 @@ omega_500=omega_500.values,
         float(np.nanmin(shear_850_300.values)),
         float(np.nanmax(shear_850_300.values)),
     )
-print(
+    print(
     "Omega 700 range:",
     float(np.nanmin(omega_700.values)),
     float(np.nanmax(omega_700.values)),
 )
 
-print(
+    print(
     "Omega 500 range:",
     float(np.nanmin(omega_500.values)),
     float(np.nanmax(omega_500.values)),
