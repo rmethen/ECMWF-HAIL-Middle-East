@@ -93,9 +93,9 @@ def main():
         +
         (v300 - v850) ** 2
     )
-omega_700 = get_level(w, 700)
+    omega_700 = get_level(w, 700)
 
-omega_500 = get_level(w, 500)
+    omega_500 = get_level(w, 500)
     # -------------------------------------------------
     # Low-level moisture
     # q kg/kg -> approximate g/kg diagnostic
