@@ -51,13 +51,13 @@ def main():
     ds_v = open_field("v")
     ds_q = open_field("q")
     ds_gh = open_field("gh")
-
+ds_w = open_field("w")
     t = ds_t["t"]
     u = ds_u["u"]
     v = ds_v["v"]
     q = ds_q["q"]
     gh = ds_gh["gh"]
-
+w = ds_w["w"]
     # -------------------------------------------------
     # Temperature diagnostics
     # -------------------------------------------------
@@ -93,7 +93,9 @@ def main():
         +
         (v300 - v850) ** 2
     )
+omega_700 = get_level(w, 700)
 
+omega_500 = get_level(w, 500)
     # -------------------------------------------------
     # Low-level moisture
     # q kg/kg -> approximate g/kg diagnostic
@@ -122,6 +124,9 @@ def main():
         t500_c=t500_c.values,
         lapse_700_500=lapse_700_500.values,
         shear_850_300=shear_850_300.values,
+        omega_700=omega_700.values,
+
+omega_500=omega_500.values,
         moisture_850=moisture_850.values,
     )
 
@@ -145,7 +150,17 @@ def main():
         float(np.nanmin(shear_850_300.values)),
         float(np.nanmax(shear_850_300.values)),
     )
+print(
+    "Omega 700 range:",
+    float(np.nanmin(omega_700.values)),
+    float(np.nanmax(omega_700.values)),
+)
 
+print(
+    "Omega 500 range:",
+    float(np.nanmin(omega_500.values)),
+    float(np.nanmax(omega_500.values)),
+)
 
 if __name__ == "__main__":
     main()
