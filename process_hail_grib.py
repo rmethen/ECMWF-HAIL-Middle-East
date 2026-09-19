@@ -106,6 +106,11 @@ def main():
     t850 = get_level(t, 850) * units.kelvin
     p850 = 850.0 * units.hPa
     td850 = dewpoint_from_specific_humidity(p850, t850, q850)
+    t500_li = get_level(t, 500) * units.kelvin
+    p_profile = np.array([850, 700, 600, 500]) * units.hPa
+    parcel_t = parcel_profile(p_profile, t850, td850)
+    parcel_t500 = parcel_t[-1]
+    li850 = (t500_li - parcel_t500).to("delta_degC").magnitude
     # Coordinates
     latitude = t500_c["latitude"].values
     longitude = t500_c["longitude"].values
@@ -130,6 +135,7 @@ def main():
 
 omega_500=omega_500.values,
         moisture_850=moisture_850.values,
+        li850=li850,
     )
 
     print("Real ECMWF hail diagnostics created:")
