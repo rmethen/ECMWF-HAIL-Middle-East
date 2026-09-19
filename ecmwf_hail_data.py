@@ -66,16 +66,8 @@ def download_ecmwf_hail_fields():
         levelist=LEVELS,
         target=str(target),
     )
-    mucape_target = Path("data/ecmwf_mucape_0_72h.grib2")
-    print("Downloading ECMWF MUCAPE...")
-    client.retrieve(
-        type="fc",
-        stream="oper",
-        step=STEPS,
-        param=["228235"],
-        target=str(mucape_target),
-    )
-    surface_target = Path("data/ecmwf_surface_wind_0_72h.grib2")
+    
+  surface_target = Path("data/ecmwf_surface_wind_0_72h.grib2")
     print("Downloading ECMWF 10-m surface wind...")
     client.retrieve(
         type="fc",
