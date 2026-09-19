@@ -66,7 +66,7 @@ def download_ecmwf_hail_fields():
         levelist=LEVELS,
         target=str(target),
     )
-     mucape_target = Path("data/ecmwf_mucape_0_72h.grib2")
+    mucape_target = Path("data/ecmwf_mucape_0_72h.grib2")
     print("Downloading ECMWF MUCAPE...")
     client.retrieve(
         type="fc",
