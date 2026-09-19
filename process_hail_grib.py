@@ -51,13 +51,13 @@ def main():
     ds_v = open_field("v")
     ds_q = open_field("q")
     ds_gh = open_field("gh")
-ds_w = open_field("w")
+    ds_w = open_field("w")
     t = ds_t["t"]
     u = ds_u["u"]
     v = ds_v["v"]
     q = ds_q["q"]
     gh = ds_gh["gh"]
-w = ds_w["w"]
+    w = ds_w["w"]
     # -------------------------------------------------
     # Temperature diagnostics
     # -------------------------------------------------
