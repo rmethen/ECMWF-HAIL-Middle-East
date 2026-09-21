@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 GRIB_FILE = Path("data/ecmwf_hail_0_72h.grib2")
+SURFACE_GRIB_FILE = Path("data/ecmwf_surface_0_72h.grib2")
 OUTPUT_FILE = Path("data/hail_diagnostics.npz")
 
 
@@ -21,6 +22,18 @@ def open_field(short_name):
             "indexpath": "",
         },
     )
+
+
+def open_surface_field(short_name):
+    ds = xr.open_dataset(
+        SURFACE_GRIB_FILE,
+        engine="cfgrib",
+        backend_kwargs={
+            "filter_by_keys": {"shortName": short_name},
+            "indexpath": "",
+        },
+    )
+    return ds[list(ds.data_vars)[0]]
 
 
 def level_coord(da):
@@ -105,6 +118,8 @@ def approximate_li850(t850_k, td850_k, t500_k, z850_m, z500_m):
 def main():
     if not GRIB_FILE.exists():
         raise FileNotFoundError(f"Missing ECMWF GRIB file: {GRIB_FILE}")
+    if not SURFACE_GRIB_FILE.exists():
+        raise FileNotFoundError(f"Missing ECMWF surface GRIB file: {SURFACE_GRIB_FILE}")
 
     print("Opening real ECMWF GRIB2 fields...")
     t = open_field("t")["t"]
@@ -113,6 +128,12 @@ def main():
     q = open_field("q")["q"]
     gh = open_field("gh")["gh"]
     w = open_field("w")["w"]
+    t2m = open_surface_field("2t")
+    d2m = open_surface_field("2d")
+    u10 = open_surface_field("10u")
+    v10 = open_surface_field("10v")
+    gust10 = open_surface_field("10fg")
+    msl = open_surface_field("msl")
 
     t_c = t - 273.15
     t500_c = get_level(t_c, 500)
@@ -131,9 +152,19 @@ def main():
     q850_values = get_level(q, 850).values
     moisture_850 = q850_values * 1000.0
     t850_values = get_level(t, 850).values
+    t850_c_values = t850_values - 273.15
     vapour_pressure_850 = q850_values * 850.0 / (0.622 + 0.378 * q850_values)
     log_ratio = np.log(np.maximum(vapour_pressure_850, 0.01) / 6.112)
     td850_k = 243.5 * log_ratio / (17.67 - log_ratio) + 273.15
+    td850_c = td850_k - 273.15
+    t2m_c = t2m.values - 273.15
+    d2m_c = d2m.values - 273.15
+    t500_values_c = get_level(t_c, 500).values
+    total_totals = t850_c_values + td850_c - 2.0 * t500_values_c
+    kuwait_total_totals = t850_c_values + d2m_c - 2.0 * t500_values_c
+    wind10 = np.hypot(u10.values, v10.values)
+    msl_hpa = msl.values / 100.0
+    dewpoint_depression = np.maximum(t2m_c - d2m_c, 0.0)
     li850 = approximate_li850(
         t850_values, td850_k, get_level(t, 500).values,
         get_level(gh, 850).values, get_level(gh, 500).values,
@@ -176,6 +207,12 @@ def main():
         z500_m=z500.values,
         moisture_850=moisture_850,
         li850=li850,
+        total_totals=total_totals,
+        kuwait_total_totals=kuwait_total_totals,
+        wind10=wind10,
+        gust10=gust10.values,
+        msl_hpa=msl_hpa,
+        dewpoint_depression=dewpoint_depression,
         wbz_m=wbz_m,
         hgl_depth_m=hgl_depth_m,
     )
