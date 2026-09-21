@@ -64,17 +64,8 @@ def download_ecmwf_hail_fields():
         step=STEPS,
         param=PARAMS,
         levelist=LEVELS,
+        area=[NORTH, WEST, SOUTH, EAST],
         target=str(target),
-    )
-    
-    surface_target = Path("data/ecmwf_surface_wind_0_72h.grib2")
-    print("Downloading ECMWF 10-m surface wind...")
-    client.retrieve(
-        type="fc",
-        stream="oper",
-        step=STEPS,
-        param=["10u", "10v"],
-        target=str(surface_target),
     )
     print("ECMWF download complete:")
     print(target)

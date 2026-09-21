@@ -21,7 +21,6 @@ def inverse_scale(x, low, high):
 
 
 def hail_potential_v2(
-    mucape,
     shear06,
     wbz_m,
     hgl_depth_m,
@@ -29,18 +28,20 @@ def hail_potential_v2(
     t500_c,
     mixing_ratio,
     li850,
+    omega700,
 ):
     """
     Calculate experimental hail potential from 0–100.
 
     Inputs:
-      mucape          J/kg
       shear06         m/s
       wbz_m           wet-bulb-zero height, metres
       hgl_depth_m     -10C to -30C hail-growth-layer depth, metres
       lapse_700_500   C/km
       t500_c          500-hPa temperature, C
       mixing_ratio    g/kg
+      li850           C
+      omega700        Pa/s (negative values indicate ascent)
     """
 
     # Hail-growth environment
@@ -54,9 +55,6 @@ def hail_potential_v2(
     # Deep-layer shear
     shear = scale(shear06, 8.0, 25.0)
 
-    # Instability deliberately limited so CAPE does not dominate.
-    instability = scale(mucape, 250.0, 2000.0)
-
     # Mid-level lapse rate
     lapse = scale(lapse_700_500, 5.5, 8.0)
 
@@ -66,16 +64,17 @@ def hail_potential_v2(
     # Low-level moisture
     moisture = scale(mixing_ratio, 5.0, 13.0)
     li = inverse_scale(li850, -6.0, 2.0)
+    ascent = inverse_scale(omega700, -1.0, 0.2)
     # V2 weighting
     score = (
         0.23 * hgl
         + 0.18 * wbz
-        + 0.18 * shear
-        + 0.10 * instability
-        + 0.09 * lapse
-        + 0.06 * t500
-        + 0.06 * moisture
-        + 0.10 * li
+        + 0.17 * shear
+        + 0.12 * lapse
+        + 0.08 * t500
+        + 0.08 * moisture
+        + 0.08 * li
+        + 0.06 * ascent
     )
 
     return np.clip(score * 100.0, 0.0, 100.0)
