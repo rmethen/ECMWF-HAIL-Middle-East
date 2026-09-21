@@ -31,10 +31,18 @@
   </header>
   <main>
     <div class="status">
+      <span class="pill">النطاق: من +0 إلى +72 ساعة — المعروض هو وقت أعلى قيمة</span>
       <span class="pill">تحديث تلقائي للصور كل 5 دقائق</span>
       <span class="pill" id="view-time"></span>
     </div>
     <section class="grid">
+      <article>
+        <h2>مؤشر السيول المفاجئة Flash Flood</h2>
+        <p>يعرض أعلى قابلية للسيول المفاجئة خلال فترة التوقع من +0 إلى +72 ساعة، اعتمادًا على أمطار ECMWF وشدة الهطول.</p>
+        <a href="https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png" target="_blank" rel="noopener">
+          <img id="flood" src="https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png" alt="خريطة مؤشر السيول المفاجئة للشرق الأوسط">
+        </a>
+      </article>
       <article>
         <h2>مؤشر قابلية البَرَد الكبير</h2>
         <p>يركز على HGL وWBZ وقص الرياح، مع دعم LI والرطوبة وOmega عند 700/500 hPa. المؤشر لا يمثل قطر حبة البَرَد بالسنتيمتر.</p>
@@ -51,7 +59,7 @@
       </article>
       <article>
         <h2>مؤشر العواصف الرملية والجدارية</h2>
-        <p>يجمع هبات الرياح والرياح السطحية والمنخفض العميق وجفاف السطح، مع دعم الحمل الحراري والرياح الهابطة للعواصف الجدارية.</p>
+        <p>يجمع الهبّات والضغط السطحي العميق والنفاث القطبي وتفاعل النفاثين والجبهة الباردة والمنخفض القطبي أو الثلجي، دون الاعتماد على الحمل الحراري.</p>
         <a href="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" target="_blank" rel="noopener">
           <img id="dust" src="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرملية والجدارية">
         </a>
@@ -63,6 +71,7 @@
   </footer>
   <script>
     const images = [
+      ["flood", "https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png"],
       ["hail", "output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png"],
       ["storm", "output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png"],
       ["dust", "output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png"]
