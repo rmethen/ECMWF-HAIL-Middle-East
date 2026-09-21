@@ -132,7 +132,7 @@ def main():
     d2m = open_surface_field("2d")
     u10 = open_surface_field("10u")
     v10 = open_surface_field("10v")
-    gust10 = open_surface_field("10fg")
+    gust10 = open_surface_field("fg10")
     msl = open_surface_field("msl")
 
     t_c = t - 273.15
