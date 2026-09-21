@@ -8,7 +8,6 @@ from matplotlib.colors import ListedColormap
 import numpy as np
 
 from dust_index import dust_storm_potential
-from thunderstorm_index import thunderstorm_potential
 
 DATA_FILE = Path("data/hail_diagnostics.npz")
 OUTPUT_FILE = Path("output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png")
@@ -37,14 +36,10 @@ def format_time(value):
 
 def main():
     data = np.load(DATA_FILE)
-    thunder = thunderstorm_potential(
-        data["li850"], data["omega_700"], data["omega_500"], data["moisture_850"],
-        data["lapse_700_500"], data["shear_850_300"], data["t500_c"],
-        data["total_totals"], data["kuwait_total_totals"],
-    )
     dust, wall, repeated_gale = dust_storm_potential(
-        data["wind10"], data["gust10"], data["msl_hpa"],
-        data["dewpoint_depression"], thunder, data["omega_700"],
+        data["gust10"], data["msl_hpa"], data["jet300_kmh"],
+        data["jet200_kmh"], data["jet_interaction"],
+        data["cold_front_gradient"], data["polar_low"],
     )
     step_scores = np.nanmax(dust.reshape(dust.shape[0], -1), axis=1)
     peak_idx = int(np.nanargmax(step_scores))
@@ -96,7 +91,7 @@ def main():
     )
     plt.figtext(
         0.5, 0.02,
-        "Gusts • Gale >62 km/h • Repeated gale • MSLP • Dryness • Convective outflow | Brown/red: wall dust • Magenta: repeated gale",
+        "Gusts • Deep MSLP • Polar jet >120 km/h • 200/300 jet coupling • Cold front • Deep polar/snow low",
         ha="center", fontsize=9,
     )
     plt.figtext(0.94, 0.02, f"Max: {np.nanmax(field):.1f}", ha="right", fontsize=10, weight="bold")
