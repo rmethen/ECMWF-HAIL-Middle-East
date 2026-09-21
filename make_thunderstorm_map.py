@@ -1,6 +1,8 @@
 """Generate the ECMWF Thunderstorm & Lightning Potential map."""
 
+
 from pathlib import Path
+
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -8,10 +10,14 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
 
+
 from thunderstorm_index import thunderstorm_potential
+
 
 DATA_FILE = Path("data/hail_diagnostics.npz")
 OUTPUT_FILE = Path("output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png")
+
+
 
 
 def smooth_field(field):
@@ -26,14 +32,20 @@ def smooth_field(field):
     return result
 
 
+
+
 def white_low_cmap():
     colors = plt.get_cmap("turbo", 10)(np.arange(10))
     colors[0] = (1.0, 1.0, 1.0, 1.0)
     return ListedColormap(colors)
 
 
+
+
 def format_time(value):
     return np.datetime_as_string(np.datetime64(value, "m"), unit="m").replace("T", " ") + " UTC"
+
+
 
 
 def main():
@@ -94,7 +106,7 @@ def main():
     )
     plt.figtext(
         0.5, 0.02,
-        "Storm support: LI • Omega 700/500 • Moisture • Lapse • Shear | Gray: 500-hPa height (m)",
+        "Storm support: Showalter (850→500 hPa) • Omega 700/500 • Moisture • Lapse • Shear | Gray: 500-hPa height (m)",
         ha="center", fontsize=9,
     )
     plt.figtext(
@@ -104,6 +116,8 @@ def main():
     plt.savefig(OUTPUT_FILE, dpi=160, bbox_inches="tight")
     plt.close()
     print("Map saved:", OUTPUT_FILE)
+
+
 
 
 if __name__ == "__main__":
