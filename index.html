@@ -27,7 +27,7 @@
 <body>
   <header>
     <h1>خرائط ECMWF التجريبية للشرق الأوسط</h1>
-    <p>مؤشر البَرَد الكبير ومؤشر العواصف الرعدية والبروق — توقعات 0–72 ساعة</p>
+    <p>البَرَد الكبير والعواصف الرعدية وTTI والعواصف الرملية الجدارية — توقعات 0–72 ساعة</p>
   </header>
   <main>
     <div class="status">
@@ -44,9 +44,16 @@
       </article>
       <article>
         <h2>مؤشر العواصف الرعدية والبروق</h2>
-        <p>مؤشر حمل حراري تجريبي يعتمد على LI والرطوبة وOmega 700/500 وقص الرياح، مع خطوط ارتفاع 500 hPa للموجات العلوية القصيرة.</p>
+        <p>يعتمد على LI والرطوبة وOmega والقص، ويضم TTI القياسي وTTI المعدل للكويت باستخدام نقطة الندى السطحية.</p>
         <a href="output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png" target="_blank" rel="noopener">
           <img id="storm" src="output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرعدية والبروق">
+        </a>
+      </article>
+      <article>
+        <h2>مؤشر العواصف الرملية والجدارية</h2>
+        <p>يجمع هبات الرياح والرياح السطحية والمنخفض العميق وجفاف السطح، مع دعم الحمل الحراري والرياح الهابطة للعواصف الجدارية.</p>
+        <a href="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" target="_blank" rel="noopener">
+          <img id="dust" src="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرملية والجدارية">
         </a>
       </article>
     </section>
@@ -57,7 +64,8 @@
   <script>
     const images = [
       ["hail", "output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png"],
-      ["storm", "output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png"]
+      ["storm", "output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png"],
+      ["dust", "output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png"]
     ];
     function refreshImages() {
       const stamp = Date.now();
