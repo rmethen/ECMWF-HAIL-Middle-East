@@ -136,6 +136,14 @@ def approximate_li850(t850_k, td850_k, t500_k, z850_m, z500_m):
     return np.asarray(t500_k) - parcel500_k
 
 
+def horizontal_gradient(field):
+    values = np.asarray(field, dtype=float)
+    return np.hypot(
+        np.gradient(values, axis=-2),
+        np.gradient(values, axis=-1),
+    )
+
+
 def main():
     if not GRIB_FILE.exists():
         raise FileNotFoundError(f"Missing ECMWF GRIB file: {GRIB_FILE}")
@@ -166,6 +174,7 @@ def main():
 
     u850, v850 = get_level(u, 850), get_level(v, 850)
     u300, v300 = get_level(u, 300), get_level(v, 300)
+    u200, v200 = get_level(u, 200), get_level(v, 200)
     shear_850_300 = np.hypot(u300 - u850, v300 - v850)
     omega_700 = get_level(w, 700)
     omega_500 = get_level(w, 500)
@@ -186,6 +195,25 @@ def main():
     wind10 = np.hypot(u10.values, v10.values)
     msl_hpa = msl.values / 100.0
     dewpoint_depression = np.maximum(t2m_c - d2m_c, 0.0)
+    jet300_kmh = np.hypot(u300.values, v300.values) * 3.6
+    jet200_kmh = np.hypot(u200.values, v200.values) * 3.6
+    speed300 = np.maximum(np.hypot(u300.values, v300.values), 0.1)
+    speed200 = np.maximum(np.hypot(u200.values, v200.values), 0.1)
+    direction_cosine = np.clip(
+        (u300.values * u200.values + v300.values * v200.values)
+        / (speed300 * speed200), -1.0, 1.0
+    )
+    directional_shear = 1.0 - np.abs(direction_cosine)
+    jet_interaction = np.clip(
+        np.minimum(jet300_kmh / 120.0, jet200_kmh / 120.0)
+        * (0.65 + 0.35 * directional_shear), 0.0, 1.0
+    )
+    cold_front_gradient = horizontal_gradient(t850_c_values)
+    polar_low = (
+        (msl_hpa < 1000.0)
+        & (t850_c_values <= 0.0)
+        & (t500_values_c <= -25.0)
+    ).astype(float)
     li850 = approximate_li850(
         t850_values, td850_k, get_level(t, 500).values,
         get_level(gh, 850).values, get_level(gh, 500).values,
@@ -234,6 +262,11 @@ def main():
         gust10=gust10.values,
         msl_hpa=msl_hpa,
         dewpoint_depression=dewpoint_depression,
+        jet300_kmh=jet300_kmh,
+        jet200_kmh=jet200_kmh,
+        jet_interaction=jet_interaction,
+        cold_front_gradient=cold_front_gradient,
+        polar_low=polar_low,
         wbz_m=wbz_m,
         hgl_depth_m=hgl_depth_m,
     )
