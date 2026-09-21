@@ -126,6 +126,7 @@ def main():
     u300, v300 = get_level(u, 300), get_level(v, 300)
     shear_850_300 = np.hypot(u300 - u850, v300 - v850)
     omega_700 = get_level(w, 700)
+    omega_500 = get_level(w, 500)
 
     q850_values = get_level(q, 850).values
     moisture_850 = q850_values * 1000.0
@@ -171,6 +172,8 @@ def main():
         lapse_700_500=lapse_700_500.values,
         shear_850_300=shear_850_300.values,
         omega_700=omega_700.values,
+        omega_500=omega_500.values,
+        z500_m=z500.values,
         moisture_850=moisture_850,
         li850=li850,
         wbz_m=wbz_m,
