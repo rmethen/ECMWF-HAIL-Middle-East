@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
+import cfgrib
 
 GRIB_FILE = Path("data/ecmwf_hail_0_72h.grib2")
 SURFACE_GRIB_FILE = Path("data/ecmwf_surface_0_72h.grib2")
@@ -34,6 +35,26 @@ def open_surface_field(short_name):
         },
     )
     return ds[list(ds.data_vars)[0]]
+
+
+def find_surface_field(*candidate_names):
+    """Find a surface field across GRIB groups and naming variants."""
+    candidates = {name.lower() for name in candidate_names}
+    for ds in cfgrib.open_datasets(
+        SURFACE_GRIB_FILE, backend_kwargs={"indexpath": ""}
+    ):
+        for variable_name, field in ds.data_vars.items():
+            short_name = str(field.attrs.get("GRIB_shortName", "")).lower()
+            long_name = str(field.attrs.get("long_name", "")).lower()
+            standard_name = str(field.attrs.get("standard_name", "")).lower()
+            if (
+                variable_name.lower() in candidates
+                or short_name in candidates
+                or ("gust" in long_name and "wind" in long_name)
+                or ("gust" in standard_name and "wind" in standard_name)
+            ):
+                return field
+    raise KeyError(f"Surface field not found: {candidate_names}")
 
 
 def level_coord(da):
@@ -132,7 +153,7 @@ def main():
     d2m = open_surface_field("2d")
     u10 = open_surface_field("10u")
     v10 = open_surface_field("10v")
-    gust10 = open_surface_field("fg10")
+    gust10 = find_surface_field("fg10", "10fg", "10fg6")
     msl = open_surface_field("msl")
 
     t_c = t - 273.15
