@@ -7,7 +7,7 @@ NORTH, WEST, SOUTH, EAST = 45, 20, 10, 65
 STEPS = list(range(0, 73, 3))
 LEVELS = [1000, 925, 850, 700, 600, 500, 400, 300, 200]
 PRESSURE_PARAMS = ["t", "u", "v", "q", "w", "gh"]
-SURFACE_PARAMS = ["2t", "2d", "10u", "10v", "fg10", "msl", "tp"]
+SURFACE_PARAMS = ["2t", "2d", "10u", "10v", "msl", "tp"]
 
 
 def download_ecmwf_hail_fields():
