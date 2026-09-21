@@ -43,11 +43,16 @@ jobs:
         run: |
           python make_thunderstorm_map.py
 
+      - name: Generate Middle East dust and wall-storm map
+        run: |
+          python make_dust_map.py
+
       - name: Commit generated map
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png
           git add output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png
+          git add output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png
           git diff --cached --quiet || git commit -m "Update experimental severe-weather maps"
           git push
