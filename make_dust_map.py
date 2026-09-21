@@ -42,7 +42,7 @@ def main():
         data["lapse_700_500"], data["shear_850_300"], data["t500_c"],
         data["total_totals"], data["kuwait_total_totals"],
     )
-    dust, wall = dust_storm_potential(
+    dust, wall, repeated_gale = dust_storm_potential(
         data["wind10"], data["gust10"], data["msl_hpa"],
         data["dewpoint_depression"], thunder, data["omega_700"],
     )
@@ -50,6 +50,7 @@ def main():
     peak_idx = int(np.nanargmax(step_scores))
     field = smooth_field(np.nanmax(dust, axis=0))
     wall_field = smooth_field(np.nanmax(wall, axis=0))
+    repeated_gale_field = np.nanmax(repeated_gale, axis=0)
     step = data["steps"][peak_idx]
     peak_hour = int(step / np.timedelta64(1, "h")) if np.issubdtype(step.dtype, np.timedelta64) else int(step)
     init_time = data["init_time"]
@@ -74,6 +75,12 @@ def main():
         linewidths=[1.0, 1.5, 2.0], transform=ccrs.PlateCarree(),
     )
     ax.clabel(wall_contours, inline=True, fontsize=7, fmt={45:"Wall 45",60:"Wall 60",75:"Wall 75"})
+    gale_contours = ax.contour(
+        data["longitude"], data["latitude"], repeated_gale_field,
+        levels=[50], colors="#cc00cc", linewidths=1.6,
+        linestyles="--", transform=ccrs.PlateCarree(),
+    )
+    ax.clabel(gale_contours, inline=True, fontsize=7, fmt={50:"Repeated gale >62 km/h"})
     ax.plot(47.98, 29.38, marker="*", color="black", markersize=10, transform=ccrs.PlateCarree())
     ax.text(48.3, 29.5, "Kuwait", fontsize=9, transform=ccrs.PlateCarree())
     grid = ax.gridlines(draw_labels=True, linewidth=0.4, alpha=0.5)
@@ -89,7 +96,7 @@ def main():
     )
     plt.figtext(
         0.5, 0.02,
-        "Gusts • 10-m wind • MSLP (<1000 hPa support) • Surface dryness • Convective outflow | Contours: wall-dust potential",
+        "Gusts • Gale >62 km/h • Repeated gale • MSLP • Dryness • Convective outflow | Brown/red: wall dust • Magenta: repeated gale",
         ha="center", fontsize=9,
     )
     plt.figtext(0.94, 0.02, f"Max: {np.nanmax(field):.1f}", ha="right", fontsize=10, weight="bold")
