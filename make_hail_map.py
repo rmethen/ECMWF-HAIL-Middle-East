@@ -14,7 +14,20 @@ OUTPUT_FILE = Path("output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png")
 WEST, EAST, SOUTH, NORTH = 20, 65, 10, 45
 
 
-def draw_map(lons, lats, field, peak_hour):
+def smooth_field(field):
+    """Apply a light 3x3 smoother without hiding regional signals."""
+    padded = np.pad(field, 1, mode="edge")
+    return sum(
+        padded[i:i + field.shape[0], j:j + field.shape[1]]
+        for i in range(3) for j in range(3)
+    ) / 9.0
+
+
+def format_time(value):
+    return np.datetime_as_string(np.datetime64(value, "m"), unit="m").replace("T", " ") + " UTC"
+
+
+def draw_map(lons, lats, field, peak_hour, init_time):
     OUTPUT_FILE.parent.mkdir(exist_ok=True)
     fig = plt.figure(figsize=(14, 9))
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -37,13 +50,18 @@ def draw_map(lons, lats, field, peak_hour):
     cbar.set_label("Experimental Hail Potential Index (0–100)")
     plt.title(
         "ECMWF Experimental Hail Potential Index V3 – Middle East\n"
-        f"Maximum potential 0–72 h | Domain peak near +{peak_hour} h",
+        f"Init: {format_time(init_time)} | Peak: +{peak_hour} h | "
+        f"Valid: {format_time(init_time + np.timedelta64(peak_hour, 'h'))}",
         fontsize=14, weight="bold",
     )
     plt.figtext(
         0.5, 0.02,
-        "Real ECMWF fields | CAPE-free experimental diagnostic – not an official ECMWF product",
+        "Hail factors: HGL • WBZ • Shear • Lapse Rate • T500 • Moisture • LI • Omega 700",
         ha="center", fontsize=9,
+    )
+    plt.figtext(
+        0.94, 0.02, f"Max: {np.nanmax(field):.1f}",
+        ha="right", fontsize=10, weight="bold",
     )
     plt.savefig(OUTPUT_FILE, dpi=160, bbox_inches="tight")
     plt.close()
@@ -60,6 +78,7 @@ def main():
         omega700=data["omega_700"],
     )
     field = np.nanmax(index, axis=0) if index.ndim == 3 else index
+    field = smooth_field(field)
     step_scores = np.nanmax(index.reshape(index.shape[0], -1), axis=1)
     peak_idx = int(np.nanargmax(step_scores))
     step = data["steps"][peak_idx]
@@ -68,7 +87,7 @@ def main():
         if np.issubdtype(step.dtype, np.timedelta64)
         else int(step)
     )
-    draw_map(data["longitude"], data["latitude"], field, peak_hour)
+    draw_map(data["longitude"], data["latitude"], field, peak_hour, data["init_time"])
 
 
 if __name__ == "__main__":

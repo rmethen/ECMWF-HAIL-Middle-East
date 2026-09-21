@@ -154,6 +154,11 @@ def main():
         if "step" in t500_c.coords
         else np.arange(t500_c.shape[0])
     )
+    init_time = (
+        t500_c["time"].values
+        if "time" in t500_c.coords
+        else np.datetime64("NaT")
+    )
 
     OUTPUT_FILE.parent.mkdir(exist_ok=True)
     np.savez_compressed(
@@ -161,6 +166,7 @@ def main():
         latitude=latitude,
         longitude=longitude,
         steps=steps,
+        init_time=init_time,
         t500_c=t500_c.values,
         lapse_700_500=lapse_700_500.values,
         shear_850_300=shear_850_300.values,

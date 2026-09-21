@@ -65,17 +65,22 @@ def hail_potential_v2(
     moisture = scale(mixing_ratio, 5.0, 13.0)
     li = inverse_scale(li850, -6.0, 2.0)
     ascent = inverse_scale(omega700, -1.0, 0.2)
-    # V2 weighting
+    # Hail physics dominate the base score.  Convective gates below prevent
+    # broad false-positive shading where HGL/WBZ are favourable but storms
+    # are unlikely to develop.
     score = (
-        0.23 * hgl
-        + 0.18 * wbz
-        + 0.17 * shear
-        + 0.12 * lapse
-        + 0.08 * t500
-        + 0.08 * moisture
-        + 0.08 * li
-        + 0.06 * ascent
+        0.30 * hgl
+        + 0.25 * wbz
+        + 0.16 * shear
+        + 0.10 * lapse
+        + 0.07 * t500
+        + 0.05 * moisture
+        + 0.04 * li
+        + 0.03 * ascent
     )
+    convective_support = np.maximum(li, ascent)
+    score *= 0.45 + 0.55 * convective_support
+    score *= 0.70 + 0.30 * moisture
 
     return np.clip(score * 100.0, 0.0, 100.0)
 
