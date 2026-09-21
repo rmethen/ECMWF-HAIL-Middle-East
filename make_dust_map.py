@@ -91,7 +91,7 @@ def main():
     )
     plt.figtext(
         0.5, 0.02,
-        "Gusts • Deep MSLP • Polar jet >120 km/h • 200/300 jet coupling • Cold front • Deep polar/snow low",
+        "10-m gust proxy • Deep MSLP • Polar jet >120 km/h • 200/300 jet coupling • Cold front • Deep polar/snow low",
         ha="center", fontsize=9,
     )
     plt.figtext(0.94, 0.02, f"Max: {np.nanmax(field):.1f}", ha="right", fontsize=10, weight="bold")
