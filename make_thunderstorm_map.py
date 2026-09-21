@@ -53,6 +53,7 @@ def main():
     index = thunderstorm_potential(
         data["li850"], data["omega_700"], data["omega_500"], data["moisture_850"],
         data["lapse_700_500"], data["shear_850_300"], data["t500_c"],
+        data["total_totals"], data["kuwait_total_totals"],
     )
     field = np.nanmax(index, axis=0) if index.ndim == 3 else index
     field = smooth_field(field)
@@ -106,7 +107,7 @@ def main():
     )
     plt.figtext(
         0.5, 0.02,
-        "Storm support: Showalter (850→500 hPa) • Omega 700/500 • Moisture • Lapse • Shear | Gray: 500-hPa height (m)",
+        "Storm support: LI • Omega 700/500 • Moisture • Lapse • Shear • TTI standard + Kuwait modified | Gray: 500-hPa height (m)",
         ha="center", fontsize=9,
     )
     plt.figtext(
