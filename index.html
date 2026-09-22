@@ -78,6 +78,20 @@
           <img id="gefs-wettest" src="output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEFS مطرًا">
         </a>
       </article>
+      <article>
+        <h2>اتفاق أعضاء ECMWF ENS على الأمطار</h2>
+        <p>نسبة اتفاق 50 عضوًا متاحًا من الإنسمبل الأوروبي على تجاوز 25 مم خلال 0–72 ساعة. ارتفاع النسبة يعني ثباتًا أكبر للسيناريو.</p>
+        <a href="output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png" target="_blank" rel="noopener">
+          <img id="ens-agreement" src="output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء ECMWF ENS على الأمطار">
+        </a>
+      </article>
+      <article>
+        <h2>أكثر سيناريوهات ECMWF ENS مطرًا</h2>
+        <p>العضو الأكثر تطرفًا في كمية المطر ضمن 50 عضوًا متاحًا خلال 0–72 ساعة؛ وهو سيناريو محتمل وليس المتوسط ولا التوقع الحتمي.</p>
+        <a href="output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" target="_blank" rel="noopener">
+          <img id="ens-wettest" src="output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء ECMWF ENS مطرًا">
+        </a>
+      </article>
     </section>
   </main>
   <footer>
@@ -90,7 +104,9 @@
       ["storm", "output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png"],
       ["dust", "output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png"],
       ["gefs-agreement", "output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png"],
-      ["gefs-wettest", "output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"]
+      ["gefs-wettest", "output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
+      ["ens-agreement", "output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png"],
+      ["ens-wettest", "output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"]
     ];
     function refreshImages() {
       const stamp = Date.now();
