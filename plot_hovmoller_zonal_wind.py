@@ -23,6 +23,35 @@ COLORS = [
     "#613000", "#db7084", "#ee9dad", "#f3c1ca", "#f7dde3",
 ]
 
+# The NOMADS equatorial subset occasionally contains a narrow, stationary
+# longitude-column discontinuity over eastern Africa.  It is a retrieval/grid
+# seam rather than a propagating atmospheric signal, so bridge only this small
+# band before applying the general smoothing filter.
+ARTIFACT_LON_BANDS = [(32.0, 40.0)]
+
+
+def bridge_longitude_artifacts(
+    longitude: np.ndarray, field: np.ndarray
+) -> np.ndarray:
+    corrected = field.copy()
+    for west, east in ARTIFACT_LON_BANDS:
+        inside = (longitude >= west) & (longitude <= east)
+        if not np.any(inside):
+            continue
+        left_candidates = np.where(longitude < west)[0]
+        right_candidates = np.where(longitude > east)[0]
+        if left_candidates.size == 0 or right_candidates.size == 0:
+            continue
+        left = left_candidates[-1]
+        right = right_candidates[0]
+        weights = ((longitude[inside] - longitude[left]) /
+                   (longitude[right] - longitude[left]))
+        corrected[:, inside] = (
+            corrected[:, left, None] * (1.0 - weights)[None, :]
+            + corrected[:, right, None] * weights[None, :]
+        )
+    return corrected
+
 
 def gaussian_kernel(sigma: float) -> np.ndarray:
     """Return a compact normalized Gaussian kernel."""
@@ -65,6 +94,7 @@ def main() -> None:
     lon = np.asarray(data["longitude"], dtype=float)
     times = data["time"].astype("datetime64[m]").astype(object)
     anomaly = np.asarray(data["u_anomaly"], dtype=float)
+    anomaly = bridge_longitude_artifacts(lon, anomaly)
     anomaly = smooth_hovmoller(anomaly)
     forecast_start = data["forecast_start"].astype("datetime64[m]").item()
     reference = str(data["reference_period"].item())
