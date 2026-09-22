@@ -13,11 +13,10 @@ import xarray as xr
 
 DATA_DIR = Path("data/ecmwf_ens")
 PF_FILE = DATA_DIR / "ens_pf_tp_f072.grib2"
-CF_FILE = DATA_DIR / "ens_cf_tp_f072.grib2"
 OUTPUT_FILE = Path("data/ecmwf_ens_precip_ensemble.npz")
 STATUS_FILE = Path("output/ecmwf_ens_status.json")
 NORTH, WEST, SOUTH, EAST = 45, 20, 10, 65
-PERTURBED_MEMBERS = list(range(1, 51))
+ENS_NUMBERS = list(range(0, 51))
 
 
 def download_fields():
@@ -29,11 +28,9 @@ def download_fields():
         "step": 72,
         "param": "tp",
     }
-    print("Downloading ECMWF ENS control member...")
-    client.retrieve(type="cf", target=str(CF_FILE), **request)
-    print("Downloading 50 ECMWF ENS perturbed members...")
+    print("Downloading ECMWF ENS members 0-50...")
     client.retrieve(
-        type="pf", number=PERTURBED_MEMBERS, target=str(PF_FILE), **request
+        type="pf", number=ENS_NUMBERS, target=str(PF_FILE), **request
     )
 
 
@@ -61,26 +58,23 @@ def to_mm(values):
 
 def main():
     download_fields()
-    control = open_tp(CF_FILE, "cf").squeeze(drop=True)
-    perturbed = open_tp(PF_FILE, "pf").squeeze(drop=True)
-    if "number" not in perturbed.dims:
-        raise RuntimeError("ECMWF perturbed-member dimension was not decoded")
-    stack = np.concatenate(
-        [to_mm(control.values)[None, ...], to_mm(perturbed.values)], axis=0
-    )
+    ensemble = open_tp(PF_FILE, "pf").squeeze(drop=True)
+    if "number" not in ensemble.dims:
+        raise RuntimeError("ECMWF member dimension was not decoded")
+    stack = to_mm(ensemble.values)
     if stack.shape[0] != 51:
         raise RuntimeError(f"Expected 51 ENS members, decoded {stack.shape[0]}")
 
-    init_value = control.coords.get("time", np.datetime64("NaT")).values
+    init_value = ensemble.coords.get("time", np.datetime64("NaT")).values
     init_time = np.asarray(init_value).reshape(-1)[0]
-    members = np.asarray(["cf"] + [f"pf{i:02d}" for i in PERTURBED_MEMBERS])
+    members = np.asarray(["cf"] + [f"pf{i:02d}" for i in ENS_NUMBERS[1:]])
     OUTPUT_FILE.parent.mkdir(exist_ok=True)
     np.savez_compressed(
         OUTPUT_FILE,
         precipitation_mm=stack,
         members=members,
-        latitude=np.asarray(control.latitude),
-        longitude=np.asarray(control.longitude),
+        latitude=np.asarray(ensemble.latitude),
+        longitude=np.asarray(ensemble.longitude),
         init_time=init_time,
         forecast_hour=72,
     )
