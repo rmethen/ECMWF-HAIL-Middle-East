@@ -1,0 +1,35 @@
+name: VP200 MJO-scale Forecast
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "35 1,7,13,19 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vp200-mjo-scale
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy scipy requests xarray netCDF4 cfgrib eccodes matplotlib cartopy pyshtools
+      - name: Build MJO-scale VP200 forecast
+        run: python vp200_mjo_scale.py
+      - name: Commit latest MJO-scale map
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/VP200_MJO_SCALE_FORECAST_LATEST.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Update MJO-scale VP200 forecast"
+          git push
