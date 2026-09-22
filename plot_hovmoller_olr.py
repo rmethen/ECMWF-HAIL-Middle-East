@@ -67,10 +67,10 @@ def main() -> None:
     ax.yaxis.set_major_locator(mdates.DayLocator(interval=5))
     ax.yaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
     ax.grid(color="0.5", linewidth=0.35, alpha=0.35)
-    ax.set_title("Outgoing Longwave Radiation — Operational", fontsize=19,
-                 pad=12)
+    ax.set_title("Outgoing Longwave Radiation — Operational", fontsize=17,
+                 pad=12, loc="left")
     ax.text(1, 1.015, "[15°S–15°N]", transform=ax.transAxes,
-            ha="right", va="bottom", fontsize=15)
+            ha="right", va="bottom", fontsize=13)
 
     cbar = fig.colorbar(mesh, ax=ax, orientation="horizontal", pad=0.09,
                         fraction=0.05, ticks=np.arange(100, 321, 20))
