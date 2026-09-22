@@ -1,0 +1,36 @@
+name: Experimental GFS Tropical Wave Map
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 1,7,13,19 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gfs-tropical-wave-map
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy scipy requests xarray cfgrib eccodes matplotlib cartopy pyshtools
+      - name: Build experimental GFS tropical-wave map
+        run: python gfs_tropical_wave_map.py
+      - name: Commit latest map
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/GFS_OLR_MJO_KELVIN_ER_LATEST.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Update experimental GFS tropical-wave map"
+          git pull --rebase origin main
+          git push
