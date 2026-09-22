@@ -1,0 +1,37 @@
+name: Hovmoller Tropical OLR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "50 0,6,12,18 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hovmoller-tropical-olr
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy requests xarray cfgrib eccodes matplotlib
+      - name: Fetch GFS OLR and render Hovmoller
+        run: |
+          python fetch_hovmoller_olr.py
+          python plot_hovmoller_olr.py
+      - name: Commit latest OLR map and rolling analysis
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/HOVMOLLER_OLR_LATEST.png data/hovmoller_olr_analysis.npz
+          git diff --cached --quiet && exit 0
+          git commit -m "Update tropical OLR Hovmoller"
+          git push
