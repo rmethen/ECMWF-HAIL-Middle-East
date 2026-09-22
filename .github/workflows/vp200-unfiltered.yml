@@ -1,0 +1,35 @@
+name: VP200 Unfiltered Anomaly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 1,7,13,19 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vp200-unfiltered
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy scipy requests xarray netCDF4 cfgrib eccodes matplotlib cartopy pyshtools
+      - name: Build unfiltered VP200 anomaly
+        run: python vp200_unfiltered.py
+      - name: Commit latest VP200 map
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/VP200_UNFILTERED_ANOMALY_LATEST.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Update unfiltered VP200 anomaly"
+          git push
