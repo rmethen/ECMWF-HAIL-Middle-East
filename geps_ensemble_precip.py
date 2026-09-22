@@ -10,6 +10,7 @@ import time
 import numpy as np
 import requests
 import xarray as xr
+import cfgrib
 
 
 DATA_DIR = Path("data/geps_precip")
@@ -72,12 +73,24 @@ def download(cycle):
 
 
 def open_precipitation():
-    ds = xr.open_dataset(
-        GRIB_FILE,
-        engine="cfgrib",
-        backend_kwargs={"filter_by_keys": {"shortName": "tp"}, "indexpath": ""},
-    )
-    field = ds["tp"] if "tp" in ds else ds[list(ds.data_vars)[0]]
+    # GEPS APCP files have used more than one ecCodes short name over time.
+    # Let cfgrib split the GRIB into compatible hypercubes, then select the
+    # field that actually contains the ensemble-member and horizontal axes.
+    datasets = cfgrib.open_datasets(GRIB_FILE, backend_kwargs={"indexpath": ""})
+    candidates = []
+    for ds in datasets:
+        for name, variable in ds.data_vars.items():
+            member = next((d for d in ("number", "realization", "perturbationNumber")
+                           if d in variable.dims), None)
+            has_lat = "latitude" in variable.coords or "lat" in variable.coords
+            has_lon = "longitude" in variable.coords or "lon" in variable.coords
+            if member and has_lat and has_lon:
+                candidates.append((name, variable))
+    if not candidates:
+        inventory = [(list(ds.data_vars), dict(ds.sizes)) for ds in datasets]
+        raise RuntimeError(f"No ensemble precipitation field found; GRIB inventory: {inventory}")
+    name, field = max(candidates, key=lambda item: item[1].size)
+    print(f"Decoded GEPS precipitation field {name!r} with dimensions {field.dims}")
     member_dim = next((d for d in ("number", "realization", "perturbationNumber")
                        if d in field.dims), None)
     if member_dim is None:
