@@ -14,8 +14,8 @@ LEVELS = np.arange(100, 321, 10)
 COLORS = [
     "#3b0078", "#57109a", "#6f28b8", "#824bd0", "#766fe0",
     "#5b91e8", "#3aafe5", "#20c9d0", "#2bd3a1", "#56da73",
-    "#8ee05a", "#c7e85a", "#edf17a", "#fff7ad", "#ffffff",
-    "#fff3bf", "#ffe08a", "#ffc75b", "#ffa33a", "#f77b2e",
+    "#8ee05a", "#c7e85a", "#edf17a", "#fffbe0", "#ffffff",
+    "#ffffff", "#fffbe0", "#ffe8a8", "#ffc75b", "#f77b2e",
     "#e94b2d", "#c92332",
 ]
 
@@ -28,8 +28,11 @@ def gaussian_kernel(sigma: float) -> np.ndarray:
 
 
 def smooth(field: np.ndarray) -> np.ndarray:
-    time_kernel = gaussian_kernel(1.5)
-    lon_kernel = gaussian_kernel(5.0)
+    # OLR contains many short-lived cloud clusters.  About 30 hours in time
+    # and 5 degrees in longitude suppresses that speckle while retaining the
+    # broad eastward-moving MJO envelope.
+    time_kernel = gaussian_kernel(2.25)
+    lon_kernel = gaussian_kernel(10.0)
     tp = len(time_kernel) // 2
     lp = len(lon_kernel) // 2
     time_data = np.pad(field, ((tp, tp), (0, 0)), mode="edge")
