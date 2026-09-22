@@ -1,0 +1,36 @@
+name: Experimental ECMWF ENS Scenarios
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ecmwf-ens-rainfall:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgeos-dev libproj-dev proj-data proj-bin
+          python -m pip install --upgrade pip
+          pip install numpy xarray cfgrib eccodes ecmwf-opendata matplotlib cartopy
+      - name: Download all ECMWF ENS precipitation members
+        run: python ecmwf_ens_precip.py
+      - name: Generate agreement and extreme-scenario maps
+        run: python make_ecmwf_ens_maps.py
+      - name: Commit experimental ECMWF ENS products
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png
+          git add output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png
+          git add output/ecmwf_ens_status.json
+          git diff --cached --quiet || git commit -m "Update experimental ECMWF ENS rainfall maps"
+          git push
