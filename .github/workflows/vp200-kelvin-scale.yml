@@ -1,0 +1,41 @@
+name: VP200 Kelvin-scale Forecast
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "50 1,7,13,19 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vp200-kelvin-scale
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy scipy requests xarray netCDF4 cfgrib eccodes matplotlib cartopy pyshtools
+      - name: Download climatology reliably
+        run: |
+          mkdir -p data/vp200
+          curl --fail --location --retry 8 --retry-all-errors --continue-at - \
+            --output data/vp200/chi.mon.ltm.1991-2020.nc \
+            https://downloads.psl.noaa.gov/Datasets/ncep.reanalysis/Monthlies/spectral/chi.mon.ltm.1991-2020.nc
+      - name: Build Kelvin-scale forecast
+        run: python vp200_kelvin_scale.py
+      - name: Commit latest map
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/VP200_KELVIN_SCALE_FORECAST_LATEST.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Update Kelvin-scale VP200 forecast"
+          git push
