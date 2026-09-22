@@ -77,7 +77,7 @@ def plot(filtered, data):
         ax.set_title(f"{label}  |  {date}", loc="left", fontsize=12)
         grid = ax.gridlines(draw_labels=True, linewidth=0.2, color="0.45", alpha=0.3)
         grid.top_labels = grid.right_labels = False
-    fig.suptitle("VP200 Kelvin Full Time-Space Filter", fontsize=18, y=0.99)
+    fig.suptitle("Historical Centred Kelvin Analysis — Latest Reliable Date", fontsize=18, y=0.99)
     cbar = fig.colorbar(mesh, ax=axes, orientation="horizontal", pad=0.04,
                         fraction=0.04, ticks=np.arange(-5, 6, 1))
     cbar.set_label("VP200 [10⁶ m² s⁻¹]   Blue: upper divergence | Red: convergence")
