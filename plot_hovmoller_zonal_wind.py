@@ -24,11 +24,48 @@ COLORS = [
 ]
 
 
+def gaussian_kernel(sigma: float) -> np.ndarray:
+    """Return a compact normalized Gaussian kernel."""
+    radius = max(1, int(np.ceil(3.0 * sigma)))
+    x = np.arange(-radius, radius + 1, dtype=float)
+    kernel = np.exp(-0.5 * (x / sigma) ** 2)
+    return kernel / kernel.sum()
+
+
+def smooth_hovmoller(field: np.ndarray) -> np.ndarray:
+    """Suppress grid-scale noise while retaining propagating wind envelopes.
+
+    GFS is sampled every 6 hours on a 0.25-degree grid.  A roughly 24-hour
+    temporal filter and 3-degree cyclic longitudinal filter match the clean
+    appearance of operational Hovmoeller products without moving the centres
+    of the westerly/easterly signals.
+    """
+    time_kernel = gaussian_kernel(1.5)
+    lon_kernel = gaussian_kernel(5.0)
+
+    time_pad = len(time_kernel) // 2
+    padded_time = np.pad(field, ((time_pad, time_pad), (0, 0)), mode="edge")
+    smoothed_time = np.apply_along_axis(
+        lambda row: np.convolve(row, time_kernel, mode="valid"),
+        0,
+        padded_time,
+    )
+
+    lon_pad = len(lon_kernel) // 2
+    padded_lon = np.pad(smoothed_time, ((0, 0), (lon_pad, lon_pad)), mode="wrap")
+    return np.apply_along_axis(
+        lambda row: np.convolve(row, lon_kernel, mode="valid"),
+        1,
+        padded_lon,
+    )
+
+
 def main() -> None:
     data = np.load(DATA_FILE)
     lon = np.asarray(data["longitude"], dtype=float)
     times = data["time"].astype("datetime64[m]").astype(object)
     anomaly = np.asarray(data["u_anomaly"], dtype=float)
+    anomaly = smooth_hovmoller(anomaly)
     forecast_start = data["forecast_start"].astype("datetime64[m]").item()
     reference = str(data["reference_period"].item())
     is_anomaly = reference != "operational-raw-wind"
