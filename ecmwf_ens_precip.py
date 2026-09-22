@@ -16,7 +16,7 @@ PF_FILE = DATA_DIR / "ens_pf_tp_f072.grib2"
 OUTPUT_FILE = Path("data/ecmwf_ens_precip_ensemble.npz")
 STATUS_FILE = Path("output/ecmwf_ens_status.json")
 NORTH, WEST, SOUTH, EAST = 45, 20, 10, 65
-ENS_NUMBERS = list(range(0, 51))
+ENS_NUMBERS = list(range(1, 51))
 
 
 def download_fields():
@@ -28,7 +28,7 @@ def download_fields():
         "step": 72,
         "param": "tp",
     }
-    print("Downloading ECMWF ENS members 0-50...")
+    print("Downloading all 50 available ECMWF ENS perturbed members...")
     client.retrieve(
         type="pf", number=ENS_NUMBERS, target=str(PF_FILE), **request
     )
@@ -62,12 +62,12 @@ def main():
     if "number" not in ensemble.dims:
         raise RuntimeError("ECMWF member dimension was not decoded")
     stack = to_mm(ensemble.values)
-    if stack.shape[0] != 51:
-        raise RuntimeError(f"Expected 51 ENS members, decoded {stack.shape[0]}")
+    if stack.shape[0] != 50:
+        raise RuntimeError(f"Expected 50 ENS members, decoded {stack.shape[0]}")
 
     init_value = ensemble.coords.get("time", np.datetime64("NaT")).values
     init_time = np.asarray(init_value).reshape(-1)[0]
-    members = np.asarray(["cf"] + [f"pf{i:02d}" for i in ENS_NUMBERS[1:]])
+    members = np.asarray([f"pf{i:02d}" for i in ENS_NUMBERS])
     OUTPUT_FILE.parent.mkdir(exist_ok=True)
     np.savez_compressed(
         OUTPUT_FILE,
@@ -86,7 +86,7 @@ def main():
                 "state": "ready",
                 "system": "ECMWF ENS",
                 "available_members": int(stack.shape[0]),
-                "target_members": 51,
+                "target_members": 50,
                 "forecast_hour": 72,
             },
             indent=2,
