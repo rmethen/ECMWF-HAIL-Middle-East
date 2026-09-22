@@ -22,12 +22,12 @@ PERTURBED_MEMBERS = list(range(1, 51))
 
 def download_fields():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    client = Client(source="ecmwf", model="ifs", resol="0p25")
+    # Use the AWS mirror to avoid congestion limits on the primary portal.
+    client = Client(source="aws", model="ifs", resol="0p25")
     request = {
         "stream": "enfo",
         "step": 72,
         "param": "tp",
-        "area": [NORTH, WEST, SOUTH, EAST],
     }
     print("Downloading ECMWF ENS control member...")
     client.retrieve(type="cf", target=str(CF_FILE), **request)
@@ -46,7 +46,11 @@ def open_tp(path, data_type):
             "indexpath": "",
         },
     )
-    return ds["tp"] if "tp" in ds else ds[list(ds.data_vars)[0]]
+    field = ds["tp"] if "tp" in ds else ds[list(ds.data_vars)[0]]
+    # The open-data mirrors provide global fields; crop after decoding.
+    lat = field.latitude
+    lat_slice = slice(NORTH, SOUTH) if lat[0] > lat[-1] else slice(SOUTH, NORTH)
+    return field.sel(latitude=lat_slice, longitude=slice(WEST, EAST))
 
 
 def to_mm(values):
