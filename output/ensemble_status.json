@@ -1,0 +1,12 @@
+{
+  "updated_utc": "2026-09-22T08:25:51.627862+00:00",
+  "cycle": "2026-09-22 00 UTC",
+  "state": "ready",
+  "detail": "GEFS 0-72 h precipitation ensemble",
+  "systems": {
+    "GEFS": {
+      "available_members": 31,
+      "target_members": 31
+    }
+  }
+}
