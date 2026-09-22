@@ -93,6 +93,20 @@
         </a>
       </article>
       <article>
+        <h2>اتفاق أعضاء GEPS الكندي على الأمطار</h2>
+        <p>نسبة اتفاق 20 عضوًا متاحًا من الإنسمبل الكندي على تجاوز 25 مم خلال 0–72 ساعة. ارتفاع النسبة يعني ثباتًا أكبر للسيناريو.</p>
+        <a href="output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png" target="_blank" rel="noopener">
+          <img id="geps-canada-agreement" src="output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء GEPS الكندي على الأمطار">
+        </a>
+      </article>
+      <article>
+        <h2>أكثر سيناريوهات GEPS الكندي مطرًا</h2>
+        <p>العضو الأكثر تطرفًا في كمية المطر ضمن 20 عضوًا متاحًا خلال 0–72 ساعة؛ وهو سيناريو محتمل وليس المتوسط ولا التوقع الحتمي.</p>
+        <a href="output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" target="_blank" rel="noopener">
+          <img id="geps-canada-wettest" src="output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEPS الكندي مطرًا">
+        </a>
+      </article>
+      <article>
         <h2>هوفمولر الرياح النطاقية عند 850 hPa</h2>
         <p>متوسط 5° جنوبًا–5° شمالًا. الأحمر يبرز الرياح الغربية المرتبطة بدفعات كلفن، والكنتورات السوداء عند +6 و+9 و+12 م/ث.</p>
         <a href="output/HOVMOLLER_U850_ANOMALY_LATEST.png" target="_blank" rel="noopener">
@@ -114,6 +128,8 @@
       ["gefs-wettest", "output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
       ["ens-agreement", "output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png"],
       ["ens-wettest", "output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
+      ["geps-canada-agreement", "output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png"],
+      ["geps-canada-wettest", "output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
       ["hovmoller-u850", "output/HOVMOLLER_U850_ANOMALY_LATEST.png"]
     ];
     function refreshImages() {
@@ -126,4 +142,3 @@
   </script>
 </body>
 </html>
-
