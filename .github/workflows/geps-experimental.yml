@@ -1,0 +1,42 @@
+name: Canadian GEPS Ensemble Scenarios
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 6,18 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canadian-geps-ensemble
+  cancel-in-progress: false
+
+jobs:
+  geps-rainfall:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgeos-dev libproj-dev proj-data proj-bin
+          python -m pip install --upgrade pip
+          pip install numpy requests xarray cfgrib eccodes matplotlib cartopy
+      - name: Download Canadian GEPS precipitation members
+        run: python geps_ensemble_precip.py
+      - name: Generate agreement and extreme-scenario maps
+        run: python make_geps_ensemble_maps.py
+      - name: Commit Canadian GEPS products
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png
+          git add output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png
+          git add output/geps_ensemble_status.json
+          git diff --cached --quiet || git commit -m "Update Canadian GEPS rainfall maps"
+          git push
