@@ -105,10 +105,33 @@ def velocity_potential(u, v, lat):
     du_dlambda = (np.roll(u, -1, axis=1) - np.roll(u, 1, axis=1)) / (2 * dlon)
     dvcos_dphi = np.gradient(v * cosphi[:, None], phi, axis=0)
     div = (du_dlambda + dvcos_dphi) / (EARTH_RADIUS * cosphi[:, None])
-    div[0] = div[1]
+
+    # Finite differences are singular at the poles.  Stabilise the outer
+    # latitude rows and smoothly taper only poleward of 70 degrees; the
+    # plotted tropical/subtropical solution is then not contaminated by a
+    # spurious hemispheric dipole.
+    div[:3] = div[3]
+    div[-3:] = div[-4]
+    abs_lat = np.abs(lat[:-1])
+    taper = np.ones_like(abs_lat)
+    polar = abs_lat > 70.0
+    taper[polar] = 0.5 * (
+        1.0 + np.cos(np.pi * (abs_lat[polar] - 70.0) / 20.0)
+    )
+    div *= taper[:, None]
+
+    # A spherical divergence field must integrate to zero globally.  Tiny
+    # numerical imbalances otherwise explode when the inverse Laplacian is
+    # applied, especially in the lowest spherical-harmonic degrees.
+    weights = cosphi[:, None]
+    div -= np.sum(div * weights) / (np.sum(weights) * div.shape[1])
 
     coeffs = pyshtools.expand.SHExpandDH(div, sampling=2, norm=4)
     lmax = coeffs.shape[1] - 1
+    # The NCEP/NCAR spectral climatology is T42.  Matching that effective
+    # resolution removes grid-scale noise and makes the anomaly comparable.
+    if lmax > 42:
+        coeffs[:, 43:, :] = 0.0
     for degree in range(1, lmax + 1):
         coeffs[:, degree, :degree + 1] *= (
             -EARTH_RADIUS ** 2 / (degree * (degree + 1))
@@ -187,6 +210,12 @@ def main():
     # global mean after differencing.
     weights = np.cos(np.deg2rad(chi_lat))[:, None]
     anomaly -= np.sum(anomaly * weights) / (np.sum(weights) * anomaly.shape[1])
+    print(
+        "VP200 ranges [10^6 m2 s-1] | "
+        f"GFS {np.nanmin(chi) / 1e6:.1f}..{np.nanmax(chi) / 1e6:.1f} | "
+        f"climatology {np.nanmin(clim) / 1e6:.1f}..{np.nanmax(clim) / 1e6:.1f} | "
+        f"anomaly {np.nanmin(anomaly) / 1e6:.1f}..{np.nanmax(anomaly) / 1e6:.1f}"
+    )
     plot(anomaly, chi_lat, lon, cycle)
     print(f"Saved {OUT_FILE} from GFS {cycle:%Y-%m-%d %H} UTC")
 
