@@ -145,7 +145,10 @@ def climatology_for(cycle, target_lat, target_lon):
     ds = xr.open_dataset(CLIM_FILE)
     da = ds["chi"]
     level_name = "level"
-    da = da.sel({level_name: da[level_name].min()})
+    # NOAA provides sigma levels; 0.2101 is the level corresponding most
+    # closely to 200 hPa.  The minimum (0.1682) is nearer 150–170 hPa and
+    # creates a false hemispheric anomaly when compared with GFS 200 hPa.
+    da = da.sel({level_name: 0.2101}, method="nearest")
     time_name = "time" if "time" in da.dims else "month"
     if time_name == "time":
         da = da.isel(time=cycle.month - 1)
