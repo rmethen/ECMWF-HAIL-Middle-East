@@ -91,6 +91,7 @@ def planetary_filter(field, min_wave=1, max_wave=5):
 
 
 def build_fields(cycle, paths):
+    base.DATA_DIR.mkdir(parents=True, exist_ok=True)
     base.download_climatology()
     fields = {}
     lat_out = lon_out = None
