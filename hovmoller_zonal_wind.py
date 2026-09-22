@@ -71,6 +71,7 @@ def main() -> None:
         time=times,
         u_anomaly=anomaly[:, order],
         forecast_start=raw["forecast_start"].astype("datetime64[h]"),
+        reference_period=raw["reference_period"],
         level_hpa=np.int16(850),
         latitude_band=np.asarray([-5.0, 5.0], dtype=np.float32),
     )

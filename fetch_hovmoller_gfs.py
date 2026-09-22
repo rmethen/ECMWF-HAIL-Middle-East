@@ -139,6 +139,7 @@ def main() -> None:
         OUTPUT, longitude=longitude, latitude=latitude, time=all_times,
         u850=all_fields, climatology=climatology,
         climatology_longitude=climatology_longitude,
+        reference_period=climate["reference_period"],
         forecast_start=np.asarray(forecast_times[0]),
     )
     print(f"Saved {OUTPUT} from GFS {cycle:%Y-%m-%d %H} UTC")

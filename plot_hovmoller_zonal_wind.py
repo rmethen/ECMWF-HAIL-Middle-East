@@ -30,6 +30,8 @@ def main() -> None:
     times = data["time"].astype("datetime64[m]").astype(object)
     anomaly = np.asarray(data["u_anomaly"], dtype=float)
     forecast_start = data["forecast_start"].astype("datetime64[m]").item()
+    reference = str(data["reference_period"].item())
+    is_anomaly = reference != "operational-raw-wind"
 
     cmap = ListedColormap(COLORS)
     norm = BoundaryNorm(LEVELS, cmap.N, clip=True)
@@ -52,15 +54,19 @@ def main() -> None:
     ax.yaxis.set_major_locator(mdates.DayLocator(interval=5))
     ax.yaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
     ax.grid(which="major", color="0.5", linewidth=0.35, alpha=0.35)
-    ax.set_title("850-hPa Zonal Wind Anomalies", fontsize=20, pad=12)
+    title = ("850-hPa Zonal Wind Anomalies (1991–2020)" if is_anomaly
+             else "850-hPa Zonal Wind — Operational")
+    ax.set_title(title, fontsize=20, pad=12)
     ax.text(1.0, 1.015, "[5°S–5°N]", transform=ax.transAxes,
             ha="right", va="bottom", fontsize=16)
 
     cbar = fig.colorbar(mesh, ax=ax, orientation="horizontal", pad=0.09,
                         fraction=0.05, ticks=np.arange(-15, 16, 3))
-    cbar.set_label("Zonal wind anomaly [m s⁻¹]   Blue: easterly | Red: westerly", fontsize=11)
+    quantity = "Zonal wind anomaly" if is_anomaly else "Zonal wind"
+    cbar.set_label(f"{quantity} [m s⁻¹]   Blue: easterly | Red: westerly", fontsize=11)
     fig.text(0.5, 0.015,
-             "Black contours (+6, +9, +12 m s⁻¹) emphasize extreme westerly wind bursts",
+             "Black contours (+6, +9, +12 m s⁻¹) emphasize extreme westerly wind bursts"
+             + ("" if is_anomaly else " | NOAA climatology temporarily unavailable"),
              ha="center", fontsize=9)
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT_FILE, dpi=180, bbox_inches="tight", facecolor="white")
