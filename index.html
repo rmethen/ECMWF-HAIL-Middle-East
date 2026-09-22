@@ -64,6 +64,20 @@
           <img id="dust" src="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرملية والجدارية">
         </a>
       </article>
+      <article>
+        <h2>اتفاق أعضاء GEFS على الأمطار</h2>
+        <p>نسبة اتفاق 31 عضوًا من الإنسمبل الأمريكي على تجاوز 25 مم خلال 0–72 ساعة. ارتفاع النسبة يعني ثباتًا أكبر للسيناريو.</p>
+        <a href="output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png" target="_blank" rel="noopener">
+          <img id="gefs-agreement" src="output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء GEFS على الأمطار">
+        </a>
+      </article>
+      <article>
+        <h2>أكثر سيناريوهات GEFS مطرًا</h2>
+        <p>العضو الأكثر تطرفًا في كمية المطر ضمن 31 عضوًا خلال 0–72 ساعة؛ وهو سيناريو محتمل وليس المتوسط ولا التوقع الحتمي.</p>
+        <a href="output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" target="_blank" rel="noopener">
+          <img id="gefs-wettest" src="output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEFS مطرًا">
+        </a>
+      </article>
     </section>
   </main>
   <footer>
@@ -74,7 +88,9 @@
       ["flood", "https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png"],
       ["hail", "output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png"],
       ["storm", "output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png"],
-      ["dust", "output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png"]
+      ["dust", "output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png"],
+      ["gefs-agreement", "output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png"],
+      ["gefs-wettest", "output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"]
     ];
     function refreshImages() {
       const stamp = Date.now();
