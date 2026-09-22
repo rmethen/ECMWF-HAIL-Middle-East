@@ -92,6 +92,13 @@
           <img id="ens-wettest" src="output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء ECMWF ENS مطرًا">
         </a>
       </article>
+      <article>
+        <h2>هوفمولر الرياح النطاقية عند 850 hPa</h2>
+        <p>متوسط 5° جنوبًا–5° شمالًا. الأحمر يبرز الرياح الغربية المرتبطة بدفعات كلفن، والكنتورات السوداء عند +6 و+9 و+12 م/ث.</p>
+        <a href="output/HOVMOLLER_U850_ANOMALY_LATEST.png" target="_blank" rel="noopener">
+          <img id="hovmoller-u850" src="output/HOVMOLLER_U850_ANOMALY_LATEST.png" alt="هوفمولر الرياح النطاقية عند 850 هكتوباسكال">
+        </a>
+      </article>
     </section>
   </main>
   <footer>
@@ -106,7 +113,8 @@
       ["gefs-agreement", "output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png"],
       ["gefs-wettest", "output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
       ["ens-agreement", "output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png"],
-      ["ens-wettest", "output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"]
+      ["ens-wettest", "output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
+      ["hovmoller-u850", "output/HOVMOLLER_U850_ANOMALY_LATEST.png"]
     ];
     function refreshImages() {
       const stamp = Date.now();
@@ -118,3 +126,4 @@
   </script>
 </body>
 </html>
+
