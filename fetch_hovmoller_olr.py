@@ -16,7 +16,7 @@ FILTER = "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl"
 CACHE = Path("data/hovmoller_olr_gfs")
 ARCHIVE = Path("data/hovmoller_olr_analysis.npz")
 OUTPUT = Path("data/hovmoller_olr_raw.npz")
-FORECAST_STEPS = tuple(range(0, 385, 6))
+FORECAST_STEPS = tuple(range(6, 385, 6))
 BACKFILL_HOURS = tuple(range(6, 24 * 8, 6))
 
 
@@ -48,7 +48,7 @@ def valid_grib(response: requests.Response) -> bool:
 
 def find_cycle() -> datetime:
     for cycle in candidate_cycles():
-        response = requests.get(FILTER, params=params(cycle, 0), timeout=45)
+        response = requests.get(FILTER, params=params(cycle, 6), timeout=45)
         if valid_grib(response):
             return cycle
     raise RuntimeError("No complete GFS cycle with top-of-atmosphere ULWRF found")
@@ -98,9 +98,9 @@ def main() -> None:
     # Seed a useful observed side on the first run; later runs add one analysis
     # every six hours and retain a 45-day rolling archive.
     history_cycles = [cycle - timedelta(hours=h) for h in BACKFILL_HOURS
-                      if np.datetime64(cycle.replace(tzinfo=None) - timedelta(hours=h), "h")
+                      if np.datetime64(cycle.replace(tzinfo=None) - timedelta(hours=h) + timedelta(hours=6), "h")
                       not in archive]
-    requests_needed = [(c, 0, "analysis") for c in history_cycles]
+    requests_needed = [(c, 6, "analysis") for c in history_cycles]
     requests_needed += [(cycle, s, "forecast") for s in FORECAST_STEPS]
     paths = {}
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -119,7 +119,7 @@ def main() -> None:
         if kind != "analysis":
             continue
         field, longitude = read_olr(path)
-        archive[np.datetime64(c.replace(tzinfo=None), "h")] = field
+        archive[np.datetime64(c.replace(tzinfo=None), "h") + np.timedelta64(6, "h")] = field
 
     forecast_times, forecast_fields = [], []
     for step in FORECAST_STEPS:
