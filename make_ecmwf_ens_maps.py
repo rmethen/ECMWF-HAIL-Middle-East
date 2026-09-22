@@ -47,7 +47,7 @@ def main():
     OUT_PROB.parent.mkdir(exist_ok=True)
     fig, ax = base_ax(
         "ECMWF ENS Agreement: 0–72 h Rain ≥25 mm – Middle East\n"
-        f"Init: {init} UTC | 51 members"
+        f"Init: {init} UTC | {rain.shape[0]} members"
     )
     shown = np.ma.masked_less(agreement, 10.0)
     plot = ax.contourf(
