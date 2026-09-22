@@ -1,0 +1,56 @@
+name: Hovmoller Zonal Wind
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "35 0,6,12,18 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hovmoller-zonal-wind
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-hovmoller.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-hovmoller.txt
+
+      - name: Restore climatology
+        uses: actions/cache@v4
+        with:
+          path: data/u850_climatology_1991_2020.npz
+          key: u850-climatology-1991-2020-v1
+
+      - name: Build NOAA climatology when absent
+        run: |
+          if [ ! -s data/u850_climatology_1991_2020.npz ]; then
+            python build_u850_climatology.py
+          fi
+
+      - name: Fetch GFS U850 and render Hovmoller
+        run: |
+          python fetch_hovmoller_gfs.py
+          python hovmoller_zonal_wind.py
+          python plot_hovmoller_zonal_wind.py
+
+      - name: Commit latest map and rolling analysis
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/HOVMOLLER_U850_ANOMALY_LATEST.png data/hovmoller_u850_analysis.npz
+          git diff --cached --quiet && exit 0
+          git commit -m "Update U850 zonal-wind Hovmoller"
+          git push
