@@ -116,7 +116,7 @@ def plot(filtered: np.ndarray, data: xr.DataArray) -> None:
         ax.set_title(f"{label}  |  {date}", loc="left", fontsize=13)
         grid = ax.gridlines(draw_labels=True, linewidth=0.2, color="0.45", alpha=0.3)
         grid.top_labels = grid.right_labels = False
-    fig.suptitle("VP200 MJO Full Time-Space Filter", fontsize=19, y=0.988)
+    fig.suptitle("Historical Centred MJO Analysis — Latest Reliable Date", fontsize=19, y=0.988)
     cbar = fig.colorbar(mesh, ax=axes, orientation="horizontal", pad=0.035,
                         fraction=0.035, ticks=np.arange(-8, 9, 2))
     cbar.set_label("VP200 [10⁶ m² s⁻¹]   Blue/purple: upper divergence | Red: convergence", fontsize=11)
