@@ -21,8 +21,8 @@ ENS_NUMBERS = list(range(0, 51))
 
 def download_fields():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    # Use the AWS mirror to avoid congestion limits on the primary portal.
-    client = Client(source="aws", model="ifs", resol="0p25")
+    # Azure is typically closest to GitHub-hosted runners and avoids portal limits.
+    client = Client(source="azure", model="ifs", resol="0p25")
     request = {
         "stream": "enfo",
         "step": 72,
