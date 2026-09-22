@@ -28,12 +28,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-hovmoller.txt
 
-      - name: Restore climatology
-        uses: actions/cache@v4
-        with:
-          path: data/u850_climatology_1991_2020.npz
-          key: u850-climatology-1991-2020-v1
-
       - name: Build NOAA climatology when absent
         run: |
           if [ ! -s data/u850_climatology_1991_2020.npz ]; then
