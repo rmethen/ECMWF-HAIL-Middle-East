@@ -70,7 +70,7 @@ def main():
     cax = fig.add_axes([0.15, 0.12, 0.64, 0.018])
     bar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax,
                        orientation="horizontal", ticks=levels[:-1], extend="max")
-    bar.set_label("6-hour precipitation in snow-supportive environment (mm)")
+    bar.set_label("Forecast-interval precipitation (6/12 h) in snow-supportive environment (mm)")
     legend = [Line2D([0], [0], color="#85602a", label="1000-500 hPa thickness (dam)"),
               Line2D([0], [0], color="#1465bc", ls="--", label="850 hPa temperature (°C)"),
               Line2D([0], [0], color="#913f91", ls=":", label="500 hPa temperature (°C)")]
