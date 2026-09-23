@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b2545">
+  <title>MJO والموجات المدارية</title>
+  <style>
+    :root { color-scheme: light; --ink:#10243b; --muted:#607086; --line:#d9e2ec; --accent:#0b6e99; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#fff; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif; }
+    header { background:linear-gradient(135deg,#071c33,#0b6e99); color:#fff; padding:28px 18px; text-align:center; }
+    h1 { margin:0 0 8px; font-size:clamp(24px,5vw,40px); }
+    header p { margin:0; opacity:.88; }
+    main { width:min(1180px,94%); margin:24px auto 40px; }
+    .status { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; color:var(--muted); font-size:14px; }
+    .pill { border:1px solid var(--line); border-radius:999px; padding:7px 12px; background:#f8fbfd; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:22px; }
+    article { border:1px solid var(--line); border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 8px 26px rgba(16,36,59,.08); }
+    article h2 { margin:0; padding:18px 18px 8px; font-size:22px; }
+    article p { color:var(--muted); margin:0; padding:0 18px 14px; line-height:1.7; }
+    article a { display:block; background:#f6f9fb; }
+    article img { display:block; width:100%; height:auto; }
+    footer { text-align:center; color:var(--muted); font-size:13px; padding:0 16px 30px; line-height:1.7; }
+
+    .nav { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
+    .nav a { color:var(--accent); padding:10px 14px; border:1px solid var(--line); border-radius:10px; text-decoration:none; }
+    .nav a[aria-current="page"] { background:#eaf5f9; font-weight:700; }
+    .map-error { padding:16px; color:#8a3434; background:#fff4f2; line-height:1.6; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>خرائط ECMWF التجريبية للشرق الأوسط</h1>
+    <p>OLR وVP200 وMJO وKelvin والهوفمولر</p>
+  </header>
+  <main>
+    <div class="status">
+      <span class="pill">تاريخ كل خريطة موضح عليها؛ بعض التحليلات التاريخية تتأخر عمدًا</span>
+      <span class="pill">تحميل الخرائط عند الوصول إليها</span>
+      <span class="pill" id="view-time"></span>
+    </div>
+      <article>
+        <h2>شذوذ جهد السرعة VP200 غير المفلتر</h2>
+        <p>تشخيص عالمي عند 200 hPa بعد طرح مناخ 1991–2020 وإزالة المتوسط النطاقي لعزل الإشارة المتحركة طوليًا. الأزرق والبنفسجي يدلان على تشتت علوي ودعم للحمل الحراري، والأحمر على تقارب علوي وقمع نسبي.</p>
+        <a href="output/VP200_UNFILTERED_ANOMALY_LATEST.png" target="_blank" rel="noopener">
+          <img id="vp200-unfiltered" src="output/VP200_UNFILTERED_ANOMALY_LATEST.png" alt="شذوذ جهد السرعة غير المفلتر عند 200 هكتوباسكال" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>متابعة MJO والموجات المدارية بتوقعات CFS</h2>
+        <p>خريطة OLR محدثة كل يومين مع توقع CFS: الأسود MJO، والأزرق Kelvin، والأحمر موجات روسبي الاستوائية ER، والبنفسجي الخلفية منخفضة التردد. التظليل الأخضر المزرق يدل على نشاط سحابي ورطوبة، والبني على القمع والجفاف. المصدر: NCICS/NOAA.</p>
+        <a href="output/NCICS_OLR_CFS_MJO_WAVES_LATEST.png" target="_blank" rel="noopener">
+          <img id="ncics-mjo-waves" src="output/NCICS_OLR_CFS_MJO_WAVES_LATEST.png" alt="توقع OLR مع MJO وKelvin وER باستخدام CFS" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>خريطة GFS التجريبية لـ OLR وMJO وKelvin وER</h2>
+        <p>منتجنا المحسوب من بيانات GFS في أربع فترات متتابعة، مدة كل منها يومان. التظليل التركوازي نشاط حمل حراري والبني قمع نسبي؛ الأسود نطاق MJO، والأزرق Kelvin المتجه شرقًا، والأحمر ER المتجه غربًا. إشارة ER دليل قصير المدى تجريبي وليست بديلًا عن الفلتر التاريخي الكامل.</p>
+        <a href="output/GFS_OLR_MJO_KELVIN_ER_LATEST.png" target="_blank" rel="noopener">
+          <img id="gfs-tropical-waves" src="output/GFS_OLR_MJO_KELVIN_ER_LATEST.png" alt="خريطة GFS التجريبية للإشعاع طويل الموجة وإشارات MJO وKelvin وER" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>توقع VP200 واسع النطاق لإشارة MJO</h2>
+        <p>ثلاث لوحات لليوم ومتوسط الأسبوع الأول والثاني، مع الاحتفاظ بالموجات النطاقية 1–5 لإظهار غلاف التشتت والتقارب واسع النطاق. هذا تشخيص MJO-scale وليس بعدُ مرشح 20–100 يوم الكامل.</p>
+        <a href="output/VP200_MJO_SCALE_FORECAST_LATEST.png" target="_blank" rel="noopener">
+          <img id="vp200-mjo-scale" src="output/VP200_MJO_SCALE_FORECAST_LATEST.png" alt="توقع VP200 واسع النطاق لإشارة MJO لليوم والأسبوع الأول والثاني" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>تحليل VP200 المفلتر بالكامل لإشارة MJO</h2>
+        <p>فلتر زمني–مكاني اتجاهي شرقًا لفترات 20–100 يوم والموجات النطاقية 1–5. يعرض ثلاث مراحل أسبوعية، ويتأخر التاريخ الأخير عمدًا لأن الفلتر المركزي يحتاج بيانات حقيقية قبله وبعده.</p>
+        <a href="output/VP200_MJO_FULL_FILTER_LATEST.png" target="_blank" rel="noopener">
+          <img id="vp200-mjo-full" src="output/VP200_MJO_FULL_FILTER_LATEST.png" alt="تحليل VP200 المفلتر زمنيا ومكانيا لإشارة MJO" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>توقع VP200 المفلتر لإشارة Kelvin</h2>
+        <p>فلتر Kelvin تشغيلي متجه شرقًا يجمع حتى 9 أيام من تحليلات GFS مع توقع 14 يومًا، ويعرض اليوم و+3 و+6 أيام مع الموجات 1–14 وقيد سرعة Kelvin الفيزيائية.</p>
+        <a href="output/VP200_KELVIN_SCALE_FORECAST_LATEST.png" target="_blank" rel="noopener">
+          <img id="vp200-kelvin-scale" src="output/VP200_KELVIN_SCALE_FORECAST_LATEST.png" alt="توقع VP200 واسع النطاق لإشارة Kelvin" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>تحليل Kelvin التاريخي المركزي</h2>
+        <p>فلتر زمني–مكاني متجه شرقًا لفترات 2.5–20 يوم والموجات 1–14، مع قيد سرعة Kelvin المكافئة والمتناظرة حول خط الاستواء. التاريخ مركزي موثوق وليس توقعًا لليوم.</p>
+        <a href="output/VP200_KELVIN_FULL_FILTER_LATEST.png" target="_blank" rel="noopener">
+          <img id="vp200-kelvin-full" src="output/VP200_KELVIN_FULL_FILTER_LATEST.png" alt="تحليل VP200 المفلتر زمنيا ومكانيا لإشارة Kelvin" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>هوفمولر الإشعاع طويل الموجة OLR</h2>
+        <p>متوسط 15° جنوبًا–15° شمالًا لرصد حركة الكتلة المدارية. البنفسجي والأخضر يعنيان OLR منخفضًا وسحبًا عميقة/نشاطًا رطبًا، والبرتقالي والأحمر يعنيان قمعًا وجفافًا.</p>
+        <a href="output/HOVMOLLER_OLR_LATEST.png" target="_blank" rel="noopener">
+          <img id="hovmoller-olr" src="output/HOVMOLLER_OLR_LATEST.png" alt="هوفمولر الإشعاع طويل الموجة وحركة الكتلة الرطبة والجافة" loading="lazy" decoding="async">
+        </a>
+      </article>
+      <article>
+        <h2>هوفمولر الرياح النطاقية عند 850 hPa</h2>
+        <p>متوسط 5° جنوبًا–5° شمالًا. الأحمر يبرز الرياح الغربية المرتبطة بدفعات كلفن، والكنتورات السوداء عند +6 و+9 و+12 م/ث.</p>
+        <a href="output/HOVMOLLER_U850_ANOMALY_LATEST.png" target="_blank" rel="noopener">
+          <img id="hovmoller-u850" src="output/HOVMOLLER_U850_ANOMALY_LATEST.png" alt="هوفمولر الرياح النطاقية عند 850 هكتوباسكال" loading="lazy" decoding="async">
+        </a>
+      </article>
+    </section>
+  </main>
+  <footer>
+    منتجات تشخيصية تجريبية مبنية على ECMWF Open Data وليست منتجات رسمية من ECMWF ولا بديلًا عن التحذيرات الرسمية.
+  </footer>
+  <script>
+    document.getElementById("view-time").textContent = "فُتحت الصفحة: " + new Date().toLocaleString("ar-KW");
+    document.querySelectorAll("article img").forEach(img => {
+      img.addEventListener("error", () => {
+        if (img.dataset.failed) return;
+        img.dataset.failed = "1";
+        const message = document.createElement("div");
+        message.className = "map-error";
+        message.textContent = "تعذّر تحميل هذه الخريطة حاليًا. اضغط لفتح ملف الصورة مباشرة أو حاول لاحقًا.";
+        img.replaceWith(message);
+      });
+    });
+  </script>
+</body>
+</html>
