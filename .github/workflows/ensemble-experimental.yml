@@ -2,6 +2,8 @@ name: Experimental Ensemble Scenarios
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '30 6,18 * * *'
 
 permissions:
   contents: write
