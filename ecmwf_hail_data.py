@@ -3,7 +3,7 @@ from pathlib import Path
 from ecmwf.opendata import Client
 
 NORTH, WEST, SOUTH, EAST = 45, 20, 10, 65
-STEPS = list(range(0, 169, 6))
+STEPS = list(range(0, 73, 6)) + list(range(84, 169, 12))
 LEVELS = [1000, 925, 850, 700, 600, 500, 400, 300, 200]
 PRESSURE_PARAMS = ["t", "u", "v", "q", "w", "gh"]
 SURFACE_PARAMS = ["2t", "2d", "10u", "10v", "msl", "tp"]
