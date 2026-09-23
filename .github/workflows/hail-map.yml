@@ -8,7 +8,7 @@ permissions:
 jobs:
   generate-map:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
           python ecmwf_hail_data.py
       - name: Process ECMWF GRIB diagnostics
         run: |
-          python process_hail_grib.py
+          python process_hail_chunks.py
       - name: Generate Middle East hail map
         run: |
           python make_hail_map.py
