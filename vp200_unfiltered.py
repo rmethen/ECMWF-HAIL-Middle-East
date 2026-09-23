@@ -185,7 +185,7 @@ def plot(anomaly, lat, lon, cycle):
                       alpha=0.35, linestyle="--")
     gl.top_labels = gl.right_labels = False
     ax.set_title(f"{cycle:%d %b %Y %H UTC}", loc="left", fontsize=14)
-    ax.set_title("Unfiltered VP200 Anomaly",
+    ax.set_title("Unfiltered VP200 Anomaly (Zonal Mean Removed)",
                  loc="right", fontsize=17)
     cbar = fig.colorbar(mesh, ax=ax, orientation="horizontal", pad=0.08,
                         fraction=0.06, ticks=np.arange(-10, 11, 2))
@@ -210,6 +210,11 @@ def main():
     chi, chi_lat = velocity_potential(u, v, lat)
     clim = climatology_for(cycle, chi_lat, lon)
     anomaly = chi - clim
+    # Intraseasonal diagnostics (MJO/Kelvin) need the longitudinally varying
+    # component.  Remove the latitude-by-latitude zonal mean so that changes
+    # in the background Hadley circulation do not saturate the map and hide
+    # eastward/westward propagating tropical signals.
+    anomaly -= np.nanmean(anomaly, axis=1, keepdims=True)
     # Velocity potential is defined up to a constant; remove the area-weighted
     # global mean after differencing.
     weights = np.cos(np.deg2rad(chi_lat))[:, None]
