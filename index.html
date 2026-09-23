@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b2545">
-  <title>خرائط ECMWF التجريبية للطقس الشديد</title>
+  <title>الطقس الشديد والإنسمبل</title>
   <style>
     :root { color-scheme: light; --ink:#10243b; --muted:#607086; --line:#d9e2ec; --accent:#0b6e99; }
     * { box-sizing: border-box; }
@@ -22,6 +22,11 @@
     article a { display:block; background:#f6f9fb; }
     article img { display:block; width:100%; height:auto; }
     footer { text-align:center; color:var(--muted); font-size:13px; padding:0 16px 30px; line-height:1.7; }
+
+    .nav { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
+    .nav a { color:var(--accent); padding:10px 14px; border:1px solid var(--line); border-radius:10px; text-decoration:none; }
+    .nav a[aria-current="page"] { background:#eaf5f9; font-weight:700; }
+    .map-error { padding:16px; color:#8a3434; background:#fff4f2; line-height:1.6; }
   </style>
 </head>
 <body>
@@ -32,141 +37,77 @@
   <main>
     <div class="status">
       <span class="pill">النطاق: من +0 إلى +72 ساعة — المعروض هو وقت أعلى قيمة</span>
-      <span class="pill">تحديث تلقائي للصور كل 5 دقائق</span>
+      <span class="pill">تحميل الخرائط عند الوصول إليها</span>
       <span class="pill" id="view-time"></span>
     </div>
-    <section class="grid">
       <article>
         <h2>مؤشر السيول المفاجئة Flash Flood</h2>
         <p>يعرض أعلى قابلية للسيول المفاجئة خلال فترة التوقع من +0 إلى +72 ساعة، اعتمادًا على أمطار ECMWF وشدة الهطول.</p>
         <a href="https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png" target="_blank" rel="noopener">
-          <img id="flood" src="https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png" alt="خريطة مؤشر السيول المفاجئة للشرق الأوسط">
+          <img id="flood" src="https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png" alt="خريطة مؤشر السيول المفاجئة للشرق الأوسط" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>مؤشر قابلية البَرَد الكبير</h2>
         <p>يركز على HGL وWBZ وقص الرياح، مع دعم LI والرطوبة وOmega عند 700/500 hPa. المؤشر لا يمثل قطر حبة البَرَد بالسنتيمتر.</p>
         <a href="output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png" target="_blank" rel="noopener">
-          <img id="hail" src="output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png" alt="خريطة مؤشر قابلية البرد الكبير">
+          <img id="hail" src="output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png" alt="خريطة مؤشر قابلية البرد الكبير" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>مؤشر العواصف الرعدية والبروق</h2>
         <p>يعتمد على LI والرطوبة وOmega والقص، ويضم TTI القياسي وTTI المعدل للكويت باستخدام نقطة الندى السطحية.</p>
         <a href="output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png" target="_blank" rel="noopener">
-          <img id="storm" src="output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرعدية والبروق">
+          <img id="storm" src="output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرعدية والبروق" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>مؤشر العواصف الرملية والجدارية</h2>
         <p>يجمع الهبّات والضغط السطحي العميق والنفاث القطبي وتفاعل النفاثين والجبهة الباردة والمنخفض القطبي أو الثلجي، دون الاعتماد على الحمل الحراري.</p>
         <a href="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" target="_blank" rel="noopener">
-          <img id="dust" src="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرملية والجدارية">
+          <img id="dust" src="output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png" alt="خريطة مؤشر العواصف الرملية والجدارية" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>اتفاق أعضاء GEFS على الأمطار</h2>
         <p>نسبة اتفاق 31 عضوًا من الإنسمبل الأمريكي على تجاوز 25 مم خلال 0–72 ساعة. ارتفاع النسبة يعني ثباتًا أكبر للسيناريو.</p>
         <a href="output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png" target="_blank" rel="noopener">
-          <img id="gefs-agreement" src="output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء GEFS على الأمطار">
+          <img id="gefs-agreement" src="output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء GEFS على الأمطار" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>أكثر سيناريوهات GEFS مطرًا</h2>
         <p>العضو الأكثر تطرفًا في كمية المطر ضمن 31 عضوًا خلال 0–72 ساعة؛ وهو سيناريو محتمل وليس المتوسط ولا التوقع الحتمي.</p>
         <a href="output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" target="_blank" rel="noopener">
-          <img id="gefs-wettest" src="output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEFS مطرًا">
+          <img id="gefs-wettest" src="output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEFS مطرًا" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>اتفاق أعضاء ECMWF ENS على الأمطار</h2>
         <p>نسبة اتفاق 50 عضوًا متاحًا من الإنسمبل الأوروبي على تجاوز 25 مم خلال 0–72 ساعة. ارتفاع النسبة يعني ثباتًا أكبر للسيناريو.</p>
         <a href="output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png" target="_blank" rel="noopener">
-          <img id="ens-agreement" src="output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء ECMWF ENS على الأمطار">
+          <img id="ens-agreement" src="output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء ECMWF ENS على الأمطار" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>أكثر سيناريوهات ECMWF ENS مطرًا</h2>
         <p>العضو الأكثر تطرفًا في كمية المطر ضمن 50 عضوًا متاحًا خلال 0–72 ساعة؛ وهو سيناريو محتمل وليس المتوسط ولا التوقع الحتمي.</p>
         <a href="output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" target="_blank" rel="noopener">
-          <img id="ens-wettest" src="output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء ECMWF ENS مطرًا">
+          <img id="ens-wettest" src="output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء ECMWF ENS مطرًا" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>اتفاق أعضاء GEPS الكندي على الأمطار</h2>
         <p>نسبة اتفاق 20 عضوًا متاحًا من الإنسمبل الكندي على تجاوز 25 مم خلال 0–72 ساعة. ارتفاع النسبة يعني ثباتًا أكبر للسيناريو.</p>
         <a href="output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png" target="_blank" rel="noopener">
-          <img id="geps-canada-agreement" src="output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء GEPS الكندي على الأمطار">
+          <img id="geps-canada-agreement" src="output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png" alt="خريطة اتفاق أعضاء GEPS الكندي على الأمطار" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
         <h2>أكثر سيناريوهات GEPS الكندي مطرًا</h2>
         <p>العضو الأكثر تطرفًا في كمية المطر ضمن 20 عضوًا متاحًا خلال 0–72 ساعة؛ وهو سيناريو محتمل وليس المتوسط ولا التوقع الحتمي.</p>
         <a href="output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" target="_blank" rel="noopener">
-          <img id="geps-canada-wettest" src="output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEPS الكندي مطرًا">
-        </a>
-      </article>
-      <article>
-        <h2>شذوذ جهد السرعة VP200 غير المفلتر</h2>
-        <p>تشخيص عالمي عند 200 hPa بعد طرح مناخ 1991–2020 وإزالة المتوسط النطاقي لعزل الإشارة المتحركة طوليًا. الأزرق والبنفسجي يدلان على تشتت علوي ودعم للحمل الحراري، والأحمر على تقارب علوي وقمع نسبي.</p>
-        <a href="output/VP200_UNFILTERED_ANOMALY_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-unfiltered" src="output/VP200_UNFILTERED_ANOMALY_LATEST.png" alt="شذوذ جهد السرعة غير المفلتر عند 200 هكتوباسكال">
-        </a>
-      </article>
-      <article>
-        <h2>متابعة MJO والموجات المدارية بتوقعات CFS</h2>
-        <p>خريطة OLR محدثة كل يومين مع توقع CFS: الأسود MJO، والأزرق Kelvin، والأحمر موجات روسبي الاستوائية ER، والبنفسجي الخلفية منخفضة التردد. التظليل الأخضر المزرق يدل على نشاط سحابي ورطوبة، والبني على القمع والجفاف. المصدر: NCICS/NOAA.</p>
-        <a href="output/NCICS_OLR_CFS_MJO_WAVES_LATEST.png" target="_blank" rel="noopener">
-          <img id="ncics-mjo-waves" src="output/NCICS_OLR_CFS_MJO_WAVES_LATEST.png" alt="توقع OLR مع MJO وKelvin وER باستخدام CFS">
-        </a>
-      </article>
-      <article>
-        <h2>خريطة GFS التجريبية لـ OLR وMJO وKelvin وER</h2>
-        <p>منتجنا المحسوب من بيانات GFS في أربع فترات متتابعة، مدة كل منها يومان. التظليل التركوازي نشاط حمل حراري والبني قمع نسبي؛ الأسود نطاق MJO، والأزرق Kelvin المتجه شرقًا، والأحمر ER المتجه غربًا. إشارة ER دليل قصير المدى تجريبي وليست بديلًا عن الفلتر التاريخي الكامل.</p>
-        <a href="output/GFS_OLR_MJO_KELVIN_ER_LATEST.png" target="_blank" rel="noopener">
-          <img id="gfs-tropical-waves" src="output/GFS_OLR_MJO_KELVIN_ER_LATEST.png" alt="خريطة GFS التجريبية للإشعاع طويل الموجة وإشارات MJO وKelvin وER">
-        </a>
-      </article>
-      <article>
-        <h2>توقع VP200 واسع النطاق لإشارة MJO</h2>
-        <p>ثلاث لوحات لليوم ومتوسط الأسبوع الأول والثاني، مع الاحتفاظ بالموجات النطاقية 1–5 لإظهار غلاف التشتت والتقارب واسع النطاق. هذا تشخيص MJO-scale وليس بعدُ مرشح 20–100 يوم الكامل.</p>
-        <a href="output/VP200_MJO_SCALE_FORECAST_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-mjo-scale" src="output/VP200_MJO_SCALE_FORECAST_LATEST.png" alt="توقع VP200 واسع النطاق لإشارة MJO لليوم والأسبوع الأول والثاني">
-        </a>
-      </article>
-      <article>
-        <h2>تحليل VP200 المفلتر بالكامل لإشارة MJO</h2>
-        <p>فلتر زمني–مكاني اتجاهي شرقًا لفترات 20–100 يوم والموجات النطاقية 1–5. يعرض ثلاث مراحل أسبوعية، ويتأخر التاريخ الأخير عمدًا لأن الفلتر المركزي يحتاج بيانات حقيقية قبله وبعده.</p>
-        <a href="output/VP200_MJO_FULL_FILTER_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-mjo-full" src="output/VP200_MJO_FULL_FILTER_LATEST.png" alt="تحليل VP200 المفلتر زمنيا ومكانيا لإشارة MJO">
-        </a>
-      </article>
-      <article>
-        <h2>توقع VP200 المفلتر لإشارة Kelvin</h2>
-        <p>فلتر Kelvin تشغيلي متجه شرقًا يجمع حتى 9 أيام من تحليلات GFS مع توقع 14 يومًا، ويعرض اليوم و+3 و+6 أيام مع الموجات 1–14 وقيد سرعة Kelvin الفيزيائية.</p>
-        <a href="output/VP200_KELVIN_SCALE_FORECAST_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-kelvin-scale" src="output/VP200_KELVIN_SCALE_FORECAST_LATEST.png" alt="توقع VP200 واسع النطاق لإشارة Kelvin">
-        </a>
-      </article>
-      <article>
-        <h2>تحليل Kelvin التاريخي المركزي</h2>
-        <p>فلتر زمني–مكاني متجه شرقًا لفترات 2.5–20 يوم والموجات 1–14، مع قيد سرعة Kelvin المكافئة والمتناظرة حول خط الاستواء. التاريخ مركزي موثوق وليس توقعًا لليوم.</p>
-        <a href="output/VP200_KELVIN_FULL_FILTER_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-kelvin-full" src="output/VP200_KELVIN_FULL_FILTER_LATEST.png" alt="تحليل VP200 المفلتر زمنيا ومكانيا لإشارة Kelvin">
-        </a>
-      </article>
-      <article>
-        <h2>هوفمولر الإشعاع طويل الموجة OLR</h2>
-        <p>متوسط 15° جنوبًا–15° شمالًا لرصد حركة الكتلة المدارية. البنفسجي والأخضر يعنيان OLR منخفضًا وسحبًا عميقة/نشاطًا رطبًا، والبرتقالي والأحمر يعنيان قمعًا وجفافًا.</p>
-        <a href="output/HOVMOLLER_OLR_LATEST.png" target="_blank" rel="noopener">
-          <img id="hovmoller-olr" src="output/HOVMOLLER_OLR_LATEST.png" alt="هوفمولر الإشعاع طويل الموجة وحركة الكتلة الرطبة والجافة">
-        </a>
-      </article>
-      <article>
-        <h2>هوفمولر الرياح النطاقية عند 850 hPa</h2>
-        <p>متوسط 5° جنوبًا–5° شمالًا. الأحمر يبرز الرياح الغربية المرتبطة بدفعات كلفن، والكنتورات السوداء عند +6 و+9 و+12 م/ث.</p>
-        <a href="output/HOVMOLLER_U850_ANOMALY_LATEST.png" target="_blank" rel="noopener">
-          <img id="hovmoller-u850" src="output/HOVMOLLER_U850_ANOMALY_LATEST.png" alt="هوفمولر الرياح النطاقية عند 850 هكتوباسكال">
+          <img id="geps-canada-wettest" src="output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png" alt="أكثر أعضاء GEPS الكندي مطرًا" loading="lazy" decoding="async">
         </a>
       </article>
     </section>
@@ -175,33 +116,17 @@
     منتجات تشخيصية تجريبية مبنية على ECMWF Open Data وليست منتجات رسمية من ECMWF ولا بديلًا عن التحذيرات الرسمية.
   </footer>
   <script>
-    const images = [
-      ["flood", "https://raw.githubusercontent.com/rmethen/ECMWF-FFPI-Kuwait/main/output/ECMWF_FFPI_MIDDLE_EAST_LATEST.png"],
-      ["hail", "output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png"],
-      ["storm", "output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png"],
-      ["dust", "output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png"],
-      ["gefs-agreement", "output/GEFS_PRECIP_ENSEMBLE_AGREEMENT_0_72H_LATEST.png"],
-      ["gefs-wettest", "output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
-      ["ens-agreement", "output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png"],
-      ["ens-wettest", "output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
-      ["geps-canada-agreement", "output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png"],
-      ["geps-canada-wettest", "output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png"],
-      ["vp200-unfiltered", "output/VP200_UNFILTERED_ANOMALY_LATEST.png"],
-      ["gfs-tropical-waves", "output/GFS_OLR_MJO_KELVIN_ER_LATEST.png"],
-      ["vp200-mjo-scale", "output/VP200_MJO_SCALE_FORECAST_LATEST.png"],
-      ["vp200-mjo-full", "output/VP200_MJO_FULL_FILTER_LATEST.png"],
-      ["vp200-kelvin-scale", "output/VP200_KELVIN_SCALE_FORECAST_LATEST.png"],
-      ["vp200-kelvin-full", "output/VP200_KELVIN_FULL_FILTER_LATEST.png"],
-      ["hovmoller-olr", "output/HOVMOLLER_OLR_LATEST.png"],
-      ["hovmoller-u850", "output/HOVMOLLER_U850_ANOMALY_LATEST.png"]
-    ];
-    function refreshImages() {
-      const stamp = Date.now();
-      images.forEach(([id, path]) => document.getElementById(id).src = `${path}?v=${stamp}`);
-      document.getElementById("view-time").textContent = `آخر فحص: ${new Date().toLocaleString("ar-KW")}`;
-    }
-    refreshImages();
-    setInterval(refreshImages, 300000);
+    document.getElementById("view-time").textContent = "فُتحت الصفحة: " + new Date().toLocaleString("ar-KW");
+    document.querySelectorAll("article img").forEach(img => {
+      img.addEventListener("error", () => {
+        if (img.dataset.failed) return;
+        img.dataset.failed = "1";
+        const message = document.createElement("div");
+        message.className = "map-error";
+        message.textContent = "تعذّر تحميل هذه الخريطة حاليًا. اضغط لفتح ملف الصورة مباشرة أو حاول لاحقًا.";
+        img.replaceWith(message);
+      });
+    });
   </script>
 </body>
 </html>
