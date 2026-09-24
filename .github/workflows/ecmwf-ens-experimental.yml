@@ -3,7 +3,8 @@ name: Experimental ECMWF ENS Scenarios
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 6,18 * * *'
+    # Step 72 ENS fields may arrive 7-9 hours after cycle initialization.
+    - cron: '0 11,23 * * *'
 
 permissions:
   contents: write
