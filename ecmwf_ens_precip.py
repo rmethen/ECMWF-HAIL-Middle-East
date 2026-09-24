@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 
@@ -67,6 +67,11 @@ def main():
 
     init_value = ensemble.coords.get("time", np.datetime64("NaT")).values
     init_time = np.asarray(init_value).reshape(-1)[0]
+    if np.isnat(init_time):
+        raise RuntimeError("ECMWF ENS data has no forecast initialization time")
+    init_utc = datetime.fromisoformat(np.datetime_as_string(init_time, unit="s")).replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - init_utc > timedelta(hours=15):
+        raise RuntimeError(f"ECMWF ENS cycle {init_utc.isoformat()} is stale; refusing to publish an old map")
     members = np.asarray([f"pf{i:02d}" for i in ENS_NUMBERS])
     OUTPUT_FILE.parent.mkdir(exist_ok=True)
     np.savez_compressed(
@@ -88,6 +93,7 @@ def main():
                 "available_members": int(stack.shape[0]),
                 "target_members": 50,
                 "forecast_hour": 72,
+                "cycle_utc": init_utc.isoformat(),
             },
             indent=2,
         ),
