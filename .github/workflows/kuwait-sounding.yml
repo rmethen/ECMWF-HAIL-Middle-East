@@ -1,0 +1,39 @@
+name: Kuwait experimental Skew-T
+on:
+  workflow_dispatch:
+    inputs:
+      forecast_hour:
+        description: ECMWF forecast lead in hours (0 to 72, multiple of 6)
+        required: true
+        default: '24'
+permissions:
+  contents: read
+jobs:
+  sounding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate forecast hour
+        env:
+          HOUR: ${{ inputs.forecast_hour }}
+        run: |
+          python - <<'PYVALID'
+          import os
+          hour = int(os.environ['HOUR'])
+          if hour not in range(0, 73, 6):
+              raise ValueError('Forecast hour must be 0, 6, ..., 72')
+          PYVALID
+      - name: Install sounding dependencies
+        run: python -m pip install numpy matplotlib xarray cfgrib ecmwf-opendata metpy
+      - name: Fetch and plot Kuwait profile
+        env:
+          HOUR: ${{ inputs.forecast_hour }}
+        run: python kuwait_sounding.py --step "$HOUR"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kuwait-skewt
+          path: output/KUWAIT_SKEWT_LATEST.png
