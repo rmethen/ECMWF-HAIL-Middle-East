@@ -51,4 +51,5 @@ jobs:
           git add output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png
           git add output/ECMWF_SNOW_ENVIRONMENT_MIDDLE_EAST_LATEST.png
           git diff --cached --quiet || git commit -m "Update experimental severe-weather maps"
+          git pull --rebase origin main
           git push
