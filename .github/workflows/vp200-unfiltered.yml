@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Restore shared VP200 climatology
+        id: clim-cache
         uses: actions/cache/restore@v4
         with:
           path: data/vp200/chi.mon.ltm.1991-2020.nc
@@ -31,6 +32,7 @@ jobs:
       - name: Build unfiltered VP200 anomaly
         run: python vp200_unfiltered.py
       - name: Save validated shared VP200 climatology
+        if: steps.clim-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: data/vp200/chi.mon.ltm.1991-2020.nc
