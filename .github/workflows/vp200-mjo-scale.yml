@@ -18,6 +18,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Restore shared VP200 climatology
+        id: clim-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/vp200/chi.mon.ltm.1991-2020.nc
+          key: vp200-chi-1991-2020-v1
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -25,6 +31,12 @@ jobs:
         run: pip install numpy scipy requests xarray netCDF4 cfgrib eccodes matplotlib cartopy pyshtools
       - name: Build MJO-scale VP200 forecast
         run: python vp200_mjo_scale.py
+      - name: Save validated shared VP200 climatology
+        if: steps.clim-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: data/vp200/chi.mon.ltm.1991-2020.nc
+          key: vp200-chi-1991-2020-v1
       - name: Commit latest MJO-scale map
         run: |
           git config user.name "github-actions[bot]"
