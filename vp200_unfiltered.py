@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import os
+import tempfile
 import time
 
 import cartopy.crs as ccrs
@@ -71,11 +73,54 @@ def download_gfs():
 
 
 def download_climatology():
-    if CLIM_FILE.exists() and CLIM_FILE.stat().st_size > 1_000_000:
+    if valid_climatology(CLIM_FILE):
+        print(f"Using local VP200 climatology: {CLIM_FILE}", flush=True)
         return
-    response = requests.get(CLIM_URL, timeout=240)
-    response.raise_for_status()
-    CLIM_FILE.write_bytes(response.content)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    for attempt in range(4):
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=DATA_DIR, suffix=".nc", delete=False) as handle:
+                temporary = Path(handle.name)
+                with requests.get(CLIM_URL, timeout=(20, 120), stream=True) as response:
+                    response.raise_for_status()
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            handle.write(chunk)
+            if not valid_climatology(temporary):
+                raise ValueError("NOAA climatology is incomplete or invalid")
+            os.replace(temporary, CLIM_FILE)
+            print(f"Downloaded and validated VP200 climatology: {CLIM_FILE}", flush=True)
+            return
+        except (requests.RequestException, OSError, ValueError) as exc:
+            print(f"VP200 climatology attempt {attempt + 1}/4 failed: {exc}", flush=True)
+            if valid_climatology(CLIM_FILE):
+                print(f"Using local VP200 climatology after download failure: {CLIM_FILE}", flush=True)
+                return
+            if attempt < 3:
+                time.sleep(2 ** attempt)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+    raise RuntimeError("No valid local VP200 climatology and NOAA download failed")
+
+
+def valid_climatology(path):
+    try:
+        if path.stat().st_size <= 1_000_000:
+            return False
+        with xr.open_dataset(path) as ds:
+            chi = ds["chi"]
+            if not {"level", "lat", "lon"}.issubset(chi.dims):
+                return False
+            if not ({"time", "month"} & set(chi.dims)):
+                return False
+            if chi.sizes["level"] < 1 or chi.sizes["lat"] < 90 or chi.sizes["lon"] < 180:
+                return False
+            chi.isel({dim: 0 for dim in chi.dims}).load()
+        return True
+    except (OSError, ValueError, KeyError, ImportError):
+        return False
 
 
 def read_wind():
