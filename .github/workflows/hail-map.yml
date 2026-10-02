@@ -30,6 +30,15 @@ jobs:
       - name: Process ECMWF GRIB diagnostics
         run: |
           python process_hail_chunks.py
+      - name: Save experimental hail predictors for later verification
+        run: |
+          python hail_research_experiment.py
+      - name: Archive experimental predictors
+        uses: actions/upload-artifact@v4
+        with:
+          name: hail-research-${{ github.run_id }}
+          path: data/hail_research_experiment.npz
+          retention-days: 30
       - name: Generate Middle East hail map
         run: |
           python make_hail_map.py
