@@ -1,5 +1,7 @@
 """Single-point experimental Kuwait forecast sounding from ECMWF Open Data."""
 import argparse
+from datetime import datetime, timezone
+import json
 from pathlib import Path
 
 import matplotlib
@@ -121,6 +123,16 @@ def main():
     fig.text(.08, .035, 'Forecast model profile • surface pressure approximated by MSLP • sparse vertical levels; diagnostics are indicative.', fontsize=8)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.output, dpi=150, bbox_inches='tight')
+    metadata = {
+        'init_utc': initial + 'Z',
+        'valid_utc': valid + 'Z',
+        'generated_utc': datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z'),
+        'forecast_hour': args.step,
+    }
+    metadata_path = args.output.with_suffix('.json')
+    temporary_path = metadata_path.with_suffix('.json.tmp')
+    temporary_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    temporary_path.replace(metadata_path)
     print(f'{args.output}\n{summary}\nInit {initial} UTC / Valid {valid} UTC / grid {lat:.2f}, {lon:.2f}')
 
 
