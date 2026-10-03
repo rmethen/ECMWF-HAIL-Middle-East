@@ -30,19 +30,35 @@ jobs:
       - name: Process ECMWF GRIB diagnostics
         run: |
           python process_hail_chunks.py
+      - name: Save experimental hail predictors for later verification
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          python hail_research_experiment.py
+      - name: Archive experimental predictors
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hail-research-${{ github.run_id }}
+          path: data/hail_research_experiment.npz
+          retention-days: 30
       - name: Generate Middle East hail map
+        if: github.ref == 'refs/heads/main'
         run: |
           python make_hail_map.py
       - name: Generate Middle East thunderstorm map
+        if: github.ref == 'refs/heads/main'
         run: |
           python make_thunderstorm_map.py
       - name: Generate Middle East dust and wall-storm map
+        if: github.ref == 'refs/heads/main'
         run: |
           python make_dust_map.py
       - name: Generate Middle East snow environment map
+        if: github.ref == 'refs/heads/main'
         run: |
           python make_snow_map.py
       - name: Commit generated map
+        if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
