@@ -20,7 +20,7 @@ forecast of hailstone diameter in centimetres.
 
 ## Hail research diagnostics (not used in the public map)
 
-Each hail-map run also archives `hail_research_experiment.npz` for 30 days. It
+A manually dispatched hail-map run archives `hail_research_experiment.npz` for 30 days. It
 contains the unchanged V2 score, `wmaxshear_proxy = sqrt(2*MUCAPE) ×
 |V300−V850|` (m²/s²), and a unitless HGL × WBZ survival/growth interaction.
 The proxy uses ECMWF most-unstable CAPE and 850–300 hPa bulk wind difference:
