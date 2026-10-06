@@ -77,8 +77,8 @@ def plot(cycle, paths):
             raise ValueError("GFS grids differ between forecast panels")
     fields = [u - np.nanmean(u, axis=1, keepdims=True) for u, _, _ in records]
     # A shared physical scale retains comparability between all three panels.
-    levels = np.arange(-12, 14, 2)
-    norm = TwoSlopeNorm(vmin=-12, vcenter=0, vmax=12)
+    levels = np.arange(-8, 9, 1)
+    norm = TwoSlopeNorm(vmin=-8, vcenter=0, vmax=8)
     fig, axes = plt.subplots(
         3, 1, figsize=(14, 11.5),
         subplot_kw={"projection": ccrs.PlateCarree(central_longitude=180)})
@@ -86,7 +86,7 @@ def plot(cycle, paths):
     for ax, lead, field in zip(axes, LEADS, fields):
         mesh = ax.contourf(lon, lat, field, levels=levels, cmap="RdBu_r",
                            norm=norm, extend="both", transform=ccrs.PlateCarree())
-        ax.contour(lon, lat, field, levels=(-8, -4, 4, 8), colors="black",
+        ax.contour(lon, lat, field, levels=(-6, -3, 3, 6), colors="black",
                    linewidths=0.35, alpha=0.6, transform=ccrs.PlateCarree())
         ax.coastlines(resolution="110m", linewidth=0.7)
         ax.add_feature(cfeature.BORDERS.with_scale("110m"), linewidth=0.25)
@@ -98,7 +98,7 @@ def plot(cycle, paths):
         grid.top_labels = grid.right_labels = False
     fig.suptitle("GFS U850 Zonal Wind Anomaly Forecast", fontsize=18, y=0.99)
     cbar = fig.colorbar(mesh, ax=axes, orientation="horizontal", pad=0.04,
-                        fraction=0.04, ticks=np.arange(-12, 13, 4))
+                        fraction=0.04, ticks=np.arange(-8, 9, 2))
     cbar.set_label("U850 minus latitude zonal mean [m s⁻¹]   Red: westerly anomaly | Blue: easterly anomaly")
     fig.text(0.5, 0.012,
              "Unfiltered GFS wind anomaly | 25°S–25°N | This map alone does not identify a Kelvin wave",
