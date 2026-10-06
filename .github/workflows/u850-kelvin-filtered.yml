@@ -1,0 +1,27 @@
+name: U850 Kelvin Filtered Forecast
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy scipy requests xarray netCDF4 cfgrib eccodes matplotlib cartopy pyshtools
+      - name: Build Kelvin-filtered U850 forecast
+        run: python u850_kelvin_filtered.py
+      - name: Upload map artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: u850-kelvin-filtered-map
+          path: output/U850_KELVIN_FILTERED_FORECAST_LATEST.png
+          if-no-files-found: error
