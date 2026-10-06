@@ -1,0 +1,40 @@
+name: U850 Zonal Wind Anomaly Forecast
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "55 2,8,14,20 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: u850-kelvin-scale
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy scipy requests xarray netCDF4 cfgrib eccodes matplotlib cartopy pyshtools
+      - name: Build U850 wind anomaly forecast
+        run: python u850_kelvin_scale.py
+      - name: Commit latest map
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/U850_ZONAL_ANOMALY_FORECAST_LATEST.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Update U850 zonal wind anomaly forecast"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep "$attempt"
+          done
+          exit 1
