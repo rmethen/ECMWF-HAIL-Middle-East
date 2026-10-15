@@ -64,17 +64,10 @@
         </a>
       </article>
       <article>
-        <h2>توقع VP200 واسع النطاق لإشارة MJO</h2>
-        <p>ثلاث لوحات لليوم ومتوسط الأسبوع الأول والثاني، مع الاحتفاظ بالموجات النطاقية 1–5 لإظهار غلاف التشتت والتقارب واسع النطاق. هذا تشخيص MJO-scale وليس بعدُ مرشح 20–100 يوم الكامل.</p>
+        <h2>خريطة VP200 التشغيلية الحالية لإشارة MJO</h2>
+        <p>ثلاث لوحات من GFS: اليوم ومتوسط الأسبوع الأول والثاني. تُبقي الموجات النطاقية 1–5 لإظهار نطاق التشتت والتقارب واسع المدى، مع تاريخ الدورة على الخريطة. مؤشر تشغيلي تقريبي لإشارة MJO، وليس الفلتر الزمني المركزي 20–100 يوم.</p>
         <a href="output/VP200_MJO_SCALE_FORECAST_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-mjo-scale" src="output/VP200_MJO_SCALE_FORECAST_LATEST.png" alt="توقع VP200 واسع النطاق لإشارة MJO لليوم والأسبوع الأول والثاني" loading="lazy" decoding="async">
-        </a>
-      </article>
-      <article>
-        <h2>تحليل VP200 المفلتر بالكامل لإشارة MJO</h2>
-        <p>فلتر زمني–مكاني اتجاهي شرقًا لفترات 20–100 يوم والموجات النطاقية 1–5. يعرض ثلاث مراحل أسبوعية، ويتأخر التاريخ الأخير عمدًا لأن الفلتر المركزي يحتاج بيانات حقيقية قبله وبعده.</p>
-        <a href="output/VP200_MJO_FULL_FILTER_LATEST.png" target="_blank" rel="noopener">
-          <img id="vp200-mjo-full" src="output/VP200_MJO_FULL_FILTER_LATEST.png" alt="تحليل VP200 المفلتر زمنيا ومكانيا لإشارة MJO" loading="lazy" decoding="async">
+          <img id="vp200-mjo-scale" src="output/VP200_MJO_SCALE_FORECAST_LATEST.png" alt="خريطة VP200 الحالية لإشارة MJO لليوم والأسبوع الأول والثاني" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
@@ -119,12 +112,13 @@
   </footer>
   <script>
     document.getElementById("view-time").textContent = "فُتحت الصفحة: " + new Date().toLocaleString("ar-KW");
-    const olrImage = document.getElementById("hovmoller-olr");
-    if (olrImage) {
-      const fresh = new URL(olrImage.getAttribute("src"), location.href);
+    for (const id of ["hovmoller-olr", "vp200-mjo-scale"]) {
+      const img = document.getElementById(id);
+      if (!img) continue;
+      const fresh = new URL(img.getAttribute("src"), location.href);
       fresh.searchParams.set("v", String(Math.floor(Date.now() / 3600000)));
-      olrImage.src = fresh.href;
-      olrImage.closest("a").href = fresh.href;
+      img.src = fresh.href;
+      img.closest("a").href = fresh.href;
     }
     document.querySelectorAll("article img").forEach(img => {
       img.addEventListener("error", () => {
