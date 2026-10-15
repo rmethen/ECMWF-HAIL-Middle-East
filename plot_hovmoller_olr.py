@@ -11,6 +11,7 @@ import numpy as np
 DATA_FILE = Path("data/hovmoller_olr_raw.npz")
 OUT_FILE = Path("output/HOVMOLLER_OLR_LATEST.png")
 ANOMALY_FILE = Path("output/HOVMOLLER_OLR_30DAY_DEPARTURE_LATEST.png")
+EASTWARD_FILE = Path("output/HOVMOLLER_OLR_EASTWARD_FILTERED_LATEST.png")
 LEVELS = np.arange(100, 321, 10)
 COLORS = [
     "#3b0078", "#57109a", "#6f28b8", "#824bd0", "#766fe0",
@@ -42,6 +43,71 @@ def smooth(field: np.ndarray) -> np.ndarray:
     lon_data = np.pad(time_data, ((0, 0), (lp, lp)), mode="wrap")
     return np.apply_along_axis(
         lambda x: np.convolve(x, lon_kernel, mode="valid"), 1, lon_data)
+
+
+def eastward_filter(raw: np.ndarray, times: np.ndarray) -> np.ndarray:
+    """Retain eastward 3–15-day, zonal waves 1–10 in the hybrid series.
+
+    This is a directional spectral diagnostic, not a Kelvin dispersion filter
+    or a 20–100-day MJO filter. Temporal end effects remain near both edges.
+    """
+    stamps = np.asarray(times, dtype="datetime64[m]")
+    if raw.shape[0] < 120 or raw.shape[1] < 20:
+        raise ValueError("Eastward OLR filter needs at least 30 days of data")
+    if not np.all(np.diff(stamps) == np.timedelta64(6, "h")):
+        raise ValueError("Eastward OLR filter needs uninterrupted six-hourly data")
+    if not np.isfinite(raw).all():
+        raise ValueError("Eastward OLR filter needs finite OLR values")
+    values = raw.astype(float) - raw.mean(axis=0, keepdims=True)
+    x = np.arange(len(values), dtype=float) - (len(values) - 1) / 2
+    slope = (x[:, None] * values).sum(axis=0) / np.dot(x, x)
+    values -= x[:, None] * slope[None, :]
+    # A short cosine taper avoids wrapping an abrupt time-series edge into
+    # spurious propagating waves; the first/last four days are less reliable.
+    edge = min(16, len(values) // 8)
+    taper = np.ones(len(values))
+    ramp = np.sin(np.linspace(0, np.pi / 2, edge, endpoint=False)) ** 2
+    taper[:edge] = ramp
+    taper[-edge:] = ramp[::-1]
+    spectrum = np.fft.fft2(values * taper[:, None])
+    frequency = np.fft.fftfreq(len(values), d=0.25)[:, None]
+    wave = np.fft.fftfreq(values.shape[1], d=1 / values.shape[1])[None, :]
+    keep = ((np.abs(frequency) >= 1 / 15) & (np.abs(frequency) <= 1 / 3)
+            & (np.abs(wave) >= 1) & (np.abs(wave) <= 10)
+            & (frequency * wave < 0))
+    return np.fft.ifft2(spectrum * keep).real
+
+
+def plot_eastward(lon, times, raw, forecast_start, cycle):
+    filtered = eastward_filter(raw, times)
+    levels = np.arange(-35, 36, 5)
+    fig, ax = plt.subplots(figsize=(10, 11))
+    mesh = ax.contourf(lon, times, filtered, levels=levels, cmap="BrBG_r",
+                       extend="both")
+    ax.axhline(forecast_start, color="#e99aac", linewidth=4, alpha=0.85)
+    ax.text(180, forecast_start, "  Begin GFS Forecast", ha="center", va="top",
+            fontsize=10)
+    ax.set_xlim(0, 360)
+    ax.set_xticks([0, 60, 120, 180, 240, 300, 360])
+    ax.set_xticklabels(["0°", "60°E", "120°E", "180°", "120°W", "60°W", "0°"])
+    ax.invert_yaxis()
+    ax.yaxis.set_major_locator(mdates.DayLocator(interval=5))
+    ax.yaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
+    ax.grid(color="0.5", linewidth=0.35, alpha=0.35)
+    ax.set_title("Eastward-filtered tropical OLR", fontsize=16, pad=12, loc="left")
+    ax.text(1, 1.015, "[15°S–15°N]", transform=ax.transAxes,
+            ha="right", va="bottom", fontsize=13)
+    cbar = fig.colorbar(mesh, ax=ax, orientation="horizontal", pad=0.09,
+                        fraction=0.05, ticks=np.arange(-30, 31, 10))
+    cbar.set_label("Filtered OLR [W m⁻²] | Teal: enhanced convection", fontsize=10)
+    fig.text(0.5, 0.015,
+             f"Eastward 3–15 d, zonal waves 1–10 | GFS analysis + forecast | "
+             f"End effects ~4 d; not MJO/Kelvin-specific | {cycle}",
+             ha="center", fontsize=8)
+    EASTWARD_FILE.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(EASTWARD_FILE, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"Saved {EASTWARD_FILE}")
 
 
 def plot_departure(lon, times, raw, forecast_start, cycle):
@@ -138,6 +204,7 @@ def main() -> None:
     plt.close(fig)
     print(f"Saved {OUT_FILE}")
     plot_departure(lon, times, raw, start, cycle)
+    plot_eastward(lon, times, raw, start, cycle)
 
 
 if __name__ == "__main__":
