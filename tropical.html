@@ -99,10 +99,10 @@
         </a>
       </article>
       <article>
-        <h2>هوفمولر الإشعاع طويل الموجة OLR</h2>
-        <p>متوسط 15° جنوبًا–15° شمالًا لرصد حركة الكتلة المدارية. البنفسجي والأخضر يعنيان OLR منخفضًا وسحبًا عميقة/نشاطًا رطبًا، والبرتقالي والأحمر يعنيان قمعًا وجفافًا.</p>
-        <a href="output/HOVMOLLER_OLR_LATEST.png" target="_blank" rel="noopener">
-          <img id="hovmoller-olr" src="output/HOVMOLLER_OLR_LATEST.png" alt="هوفمولر الإشعاع طويل الموجة وحركة الكتلة الرطبة والجافة" loading="lazy" decoding="async">
+        <h2>هوفمولر OLR المفلتر شرقًا</h2>
+        <p>إشارة OLR المتجهة شرقًا لفترات 3–15 يومًا والموجات 1–10 بين 15° جنوبًا و15° شمالًا. الأزرق المخضر يعني نشاطًا سحابيًا وحملاً معززًا. تتأثر أطراف السلسلة الزمنية بنحو 4 أيام؛ الترشيح لا يحدد موجة كلفن أو MJO وحدها.</p>
+        <a href="output/HOVMOLLER_OLR_EASTWARD_FILTERED_LATEST.png" target="_blank" rel="noopener">
+          <img id="hovmoller-olr" src="output/HOVMOLLER_OLR_EASTWARD_FILTERED_LATEST.png" alt="هوفمولر شذوذ OLR المفلتر للموجات المتجهة شرقًا" loading="lazy" decoding="async">
         </a>
       </article>
       <article>
@@ -119,6 +119,13 @@
   </footer>
   <script>
     document.getElementById("view-time").textContent = "فُتحت الصفحة: " + new Date().toLocaleString("ar-KW");
+    const olrImage = document.getElementById("hovmoller-olr");
+    if (olrImage) {
+      const fresh = new URL(olrImage.getAttribute("src"), location.href);
+      fresh.searchParams.set("v", String(Math.floor(Date.now() / 3600000)));
+      olrImage.src = fresh.href;
+      olrImage.closest("a").href = fresh.href;
+    }
     document.querySelectorAll("article img").forEach(img => {
       img.addEventListener("error", () => {
         if (img.dataset.failed) return;
