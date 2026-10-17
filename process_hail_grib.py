@@ -141,6 +141,7 @@ def main():
     u10 = open_surface_field("10u")
     v10 = open_surface_field("10v")
     msl = open_surface_field("msl")
+    mucape = open_surface_field("mucape")
 
     t_c = t - 273.15
     t500_c = get_level(t_c, 500)
@@ -250,6 +251,7 @@ def main():
         polar_low=polar_low,
         wbz_m=wbz_m,
         hgl_depth_m=hgl_depth_m,
+        mucape=np.maximum(mucape.values, 0.0),
     )
     print("Real ECMWF diagnostics created:", OUTPUT_FILE)
 
