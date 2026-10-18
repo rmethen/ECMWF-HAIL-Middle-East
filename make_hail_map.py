@@ -12,6 +12,7 @@ from hail_index import hail_potential_v2
 
 DATA_FILE = Path("data/hail_diagnostics.npz")
 OUTPUT_FILE = Path("output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png")
+MAP_LABEL = "Original WBZ"
 WEST, EAST, SOUTH, NORTH = 20, 65, 10, 45
 
 
@@ -61,7 +62,7 @@ def draw_map(lons, lats, field, peak_hour, init_time):
     cbar = plt.colorbar(plot, ax=ax, pad=0.025, shrink=0.82)
     cbar.set_label("Experimental Large Hail Potential (0–100)")
     plt.title(
-        "ECMWF Experimental Large Hail Potential Index V3 – Middle East\n"
+        f"ECMWF Experimental Large Hail Potential V2 – {MAP_LABEL}\n"
         f"Init: {format_time(init_time)} | Peak: +{peak_hour} h | "
         f"Valid: {format_time(init_time + np.timedelta64(peak_hour, 'h'))}",
         fontsize=14, weight="bold",
