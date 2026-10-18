@@ -30,7 +30,7 @@ jobs:
 
       - name: Build NOAA climatology when absent
         run: |
-          if [ ! -s data/u850_climatology_1991_2020.npz ]; then
+          if [ ! -s data/u850_climatology_1991_2020.npz ] || [ ! -s data/u850_climatology_1991_2020_7NS.npz ]; then
             python build_u850_climatology.py
           fi
 
@@ -44,7 +44,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add output/HOVMOLLER_U850_ANOMALY_LATEST.png data/hovmoller_u850_analysis.npz
+          git add output/HOVMOLLER_U850_ANOMALY_LATEST.png output/HOVMOLLER_U850_ANOMALY_7NS_LATEST.png data/hovmoller_u850_analysis.npz data/hovmoller_u850_analysis_7NS.npz
           git diff --cached --quiet && exit 0
           git commit -m "Update U850 zonal-wind Hovmoller"
           git push
