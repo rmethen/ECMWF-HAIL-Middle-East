@@ -50,9 +50,9 @@ def hail_potential_v2(
     # the occurrence of small hail alone.
     hgl = scale(hgl_depth_m, 2400.0, 5000.0)
 
-    # Moderate WBZ generally favors hail survival.
-    wbz_low = scale(wbz_m, 1400.0, 2200.0)
-    wbz_high = inverse_scale(wbz_m, 3300.0, 4400.0)
+    # Full WBZ support from 1500 to 2000 m; taper on either side.
+    wbz_low = scale(wbz_m, 1000.0, 1500.0)
+    wbz_high = inverse_scale(wbz_m, 2000.0, 4400.0)
     wbz = np.minimum(wbz_low, wbz_high)
 
     # Deep-layer shear
