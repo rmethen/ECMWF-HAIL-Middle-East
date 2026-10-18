@@ -23,6 +23,8 @@ import numpy as np
 
 RAW_FILE = Path("data/hovmoller_u850_raw.npz")
 OUT_FILE = Path("data/hovmoller_u850_anomaly.npz")
+RAW_FILE_7 = Path("data/hovmoller_u850_raw_7NS.npz")
+OUT_FILE_7 = Path("data/hovmoller_u850_anomaly_7NS.npz")
 
 
 def day_of_year(times: np.ndarray) -> np.ndarray:
@@ -46,8 +48,8 @@ def periodic_interp(source_lon: np.ndarray, source: np.ndarray,
     ]).astype(np.float32)
 
 
-def main() -> None:
-    raw = np.load(RAW_FILE)
+def build(raw_file: Path, out_file: Path, width: int) -> None:
+    raw = np.load(raw_file)
     lon = np.asarray(raw["longitude"], dtype=np.float32) % 360.0
     lat = np.asarray(raw["latitude"], dtype=np.float32)
     times = raw["time"].astype("datetime64[h]")
@@ -55,27 +57,32 @@ def main() -> None:
     clim = np.asarray(raw["climatology"], dtype=np.float32)
     clim_lon = np.asarray(raw["climatology_longitude"], dtype=np.float32)
 
-    belt = (lat >= -5.0) & (lat <= 5.0)
+    belt = (lat >= -width) & (lat <= width)
     if not np.any(belt):
-        raise ValueError("Input latitude grid does not cover 5S-5N")
+        raise ValueError(f"Input latitude grid does not cover {width}S-{width}N")
     equatorial_u = np.nanmean(u850[:, belt, :], axis=1)
     doy = np.clip(day_of_year(times), 0, clim.shape[0] - 1)
     daily_clim = periodic_interp(clim_lon, clim, lon)
     anomaly = equatorial_u - daily_clim[doy]
 
     order = np.argsort(lon)
-    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
-        OUT_FILE,
+        out_file,
         longitude=lon[order],
         time=times,
         u_anomaly=anomaly[:, order],
         forecast_start=raw["forecast_start"].astype("datetime64[h]"),
         reference_period=raw["reference_period"],
         level_hpa=np.int16(850),
-        latitude_band=np.asarray([-5.0, 5.0], dtype=np.float32),
+        latitude_band=np.asarray([-float(width), float(width)], dtype=np.float32),
     )
-    print(f"Saved {OUT_FILE}")
+    print(f"Saved {out_file}")
+
+
+def main() -> None:
+    build(RAW_FILE, OUT_FILE, 5)
+    build(RAW_FILE_7, OUT_FILE_7, 7)
 
 
 if __name__ == "__main__":

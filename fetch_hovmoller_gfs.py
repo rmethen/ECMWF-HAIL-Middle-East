@@ -23,6 +23,9 @@ CACHE = Path("data/hovmoller_gfs")
 ARCHIVE = Path("data/hovmoller_u850_analysis.npz")
 CLIM = Path("data/u850_climatology_1991_2020.npz")
 OUTPUT = Path("data/hovmoller_u850_raw.npz")
+ARCHIVE_7 = Path("data/hovmoller_u850_analysis_7NS.npz")
+CLIM_7 = Path("data/u850_climatology_1991_2020_7NS.npz")
+OUTPUT_7 = Path("data/hovmoller_u850_raw_7NS.npz")
 FORECAST_STEPS = tuple(range(0, 385, 6))
 
 
@@ -42,8 +45,8 @@ def params(cycle: datetime, step: int) -> dict[str, object]:
         "subregion": "",
         "leftlon": 0,
         "rightlon": 360,
-        "toplat": 5,
-        "bottomlat": -5,
+        "toplat": 7,
+        "bottomlat": -7,
         "dir": f"/gfs.{cycle:%Y%m%d}/{cycle:%H}/atmos",
     }
 
@@ -89,10 +92,10 @@ def read_u850(path: Path):
             np.asarray(da.longitude, dtype=np.float32))
 
 
-def load_analysis():
-    if not ARCHIVE.exists():
+def load_analysis(archive: Path):
+    if not archive.exists():
         return [], []
-    old = np.load(ARCHIVE)
+    old = np.load(archive)
     return list(old["time"].astype("datetime64[h]")), list(old["u850"])
 
 
@@ -111,38 +114,35 @@ def main() -> None:
         forecast_fields.append(field)
         forecast_times.append(np.datetime64(cycle.replace(tzinfo=None)) + np.timedelta64(step, "h"))
 
-    analysis_times, analysis_fields = load_analysis()
-    # The f000 field is the current analysis.  Saving it on every run gradually
-    # builds the historical half of the diagram without a large archive pull.
-    analysis_times.append(forecast_times[0])
-    analysis_fields.append(forecast_fields[0])
-    unique = {}
-    for t, field in zip(analysis_times, analysis_fields):
-        unique[np.datetime64(t, "h")] = field
-    cutoff = np.datetime64(cycle.replace(tzinfo=None)) - np.timedelta64(45, "D")
-    kept_times = sorted(t for t in unique if t >= cutoff)
-    kept_fields = [unique[t] for t in kept_times]
-    ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(ARCHIVE, time=np.asarray(kept_times),
-                        u850=np.stack(kept_fields))
-
-    if not CLIM.exists():
-        raise FileNotFoundError(
-            f"Missing {CLIM}; install the 1991-2020 daily U850 climatology first"
+    for width, archive, climate_file, output in (
+        (5, ARCHIVE, CLIM, OUTPUT), (7, ARCHIVE_7, CLIM_7, OUTPUT_7)
+    ):
+        belt = (latitude >= -width) & (latitude <= width)
+        selected = [field[belt] for field in forecast_fields]
+        analysis_times, analysis_fields = load_analysis(archive)
+        # Keep the existing +/-5 archive and start an independent +/-7 archive.
+        unique = {np.datetime64(t, "h"): field
+                  for t, field in zip(analysis_times, analysis_fields)}
+        unique[forecast_times[0]] = selected[0]
+        cutoff = np.datetime64(cycle.replace(tzinfo=None)) - np.timedelta64(45, "D")
+        kept_times = sorted(t for t in unique if t >= cutoff)
+        kept_fields = [unique[t] for t in kept_times]
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(archive, time=np.asarray(kept_times),
+                            u850=np.stack(kept_fields))
+        if not climate_file.exists():
+            raise FileNotFoundError(f"Missing {climate_file}; build climatology first")
+        climate = np.load(climate_file)
+        np.savez_compressed(
+            output, longitude=longitude, latitude=latitude[belt],
+            time=np.asarray(kept_times + forecast_times[1:]),
+            u850=np.stack(kept_fields + selected[1:]),
+            climatology=climate["climatology"],
+            climatology_longitude=climate["longitude"],
+            reference_period=climate["reference_period"],
+            forecast_start=np.asarray(forecast_times[0]),
         )
-    climate = np.load(CLIM)
-    climatology = climate["climatology"]
-    climatology_longitude = climate["longitude"]
-    all_times = np.asarray(kept_times + forecast_times[1:])
-    all_fields = np.stack(kept_fields + forecast_fields[1:])
-    np.savez_compressed(
-        OUTPUT, longitude=longitude, latitude=latitude, time=all_times,
-        u850=all_fields, climatology=climatology,
-        climatology_longitude=climatology_longitude,
-        reference_period=climate["reference_period"],
-        forecast_start=np.asarray(forecast_times[0]),
-    )
-    print(f"Saved {OUTPUT} from GFS {cycle:%Y-%m-%d %H} UTC")
+        print(f"Saved {output} from GFS {cycle:%Y-%m-%d %H} UTC")
 
 
 if __name__ == "__main__":

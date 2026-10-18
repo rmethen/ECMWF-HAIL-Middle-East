@@ -18,6 +18,7 @@ SOURCE = (
 )
 DOWNLOAD = Path("data/noaa_uwnd_mon_ltm_1991_2020.nc")
 OUTPUT = Path("data/u850_climatology_1991_2020.npz")
+OUTPUT_7 = Path("data/u850_climatology_1991_2020_7NS.npz")
 
 
 def save_operational_fallback() -> None:
@@ -28,14 +29,13 @@ def save_operational_fallback() -> None:
     operational fallback can never be mistaken for a climatological anomaly.
     """
     longitude = np.arange(0.0, 360.0, 2.5, dtype=np.float32)
-    np.savez_compressed(
-        OUTPUT,
-        climatology=np.zeros((366, longitude.size), dtype=np.float32),
-        longitude=longitude,
-        reference_period=np.asarray("operational-raw-wind"),
-        level_hpa=np.int16(850),
-        latitude_band=np.asarray([-5.0, 5.0], dtype=np.float32),
-    )
+    for width, target in ((5, OUTPUT), (7, OUTPUT_7)):
+        np.savez_compressed(
+            target, climatology=np.zeros((366, longitude.size), dtype=np.float32),
+            longitude=longitude, reference_period=np.asarray("operational-raw-wind"),
+            level_hpa=np.int16(850),
+            latitude_band=np.asarray([-float(width), float(width)], dtype=np.float32),
+        )
     print(f"NOAA unavailable; saved transparent raw-wind fallback to {OUTPUT}")
 
 
@@ -60,32 +60,34 @@ def main() -> None:
     lat = wind[lat_name]
     # NCEP latitude is normally north-to-south; the boolean selection works
     # regardless of coordinate order.
-    monthly = wind.where((lat >= -5) & (lat <= 5), drop=True).mean(lat_name).load()
-    if monthly.sizes.get("time") != 12:
-        raise ValueError("NOAA long-term-mean file does not contain 12 months")
-
-    # Place monthly means at month centres, then interpolate cyclically to all
-    # days.  Leap day is retained so indexing stays stable in leap years.
-    centres = np.asarray([15, 45, 74, 105, 135, 166,
-                          196, 227, 258, 288, 319, 349], dtype=float)
-    x = np.concatenate(([centres[-1] - 366], centres, [centres[0] + 366]))
-    values = np.asarray(monthly.values, dtype=np.float32)
-    wrapped = np.concatenate((values[-1:], values, values[:1]), axis=0)
-    days = np.arange(366, dtype=float)
-    daily = np.stack([
-        np.interp(days, x, wrapped[:, j]) for j in range(wrapped.shape[1])
-    ], axis=1).astype(np.float32)
-
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        OUTPUT,
-        climatology=daily,
-        longitude=np.asarray(monthly[lon_name], dtype=np.float32) % 360.0,
-        reference_period=np.asarray("1991-2020"),
-        level_hpa=np.int16(850),
-        latitude_band=np.asarray([-5.0, 5.0], dtype=np.float32),
-    )
-    print(f"Saved {OUTPUT}")
+    for width, target in ((5, OUTPUT), (7, OUTPUT_7)):
+        if width == 7:
+            # NCEP's 2.5-degree grid otherwise selects the same points for
+            # +/-5 and +/-7. Interpolate before the latitude average.
+            fine_lat = np.arange(-7.0, 7.01, 0.25)
+            monthly = (wind.sortby(lat_name).interp({lat_name: fine_lat})
+                       .mean(lat_name).load())
+        else:
+            monthly = wind.where((lat >= -width) & (lat <= width), drop=True).mean(lat_name).load()
+        if monthly.sizes.get("time") != 12:
+            raise ValueError("NOAA long-term-mean file does not contain 12 months")
+        centres = np.asarray([15, 45, 74, 105, 135, 166,
+                              196, 227, 258, 288, 319, 349], dtype=float)
+        x = np.concatenate(([centres[-1] - 366], centres, [centres[0] + 366]))
+        values = np.asarray(monthly.values, dtype=np.float32)
+        wrapped = np.concatenate((values[-1:], values, values[:1]), axis=0)
+        days = np.arange(366, dtype=float)
+        daily = np.stack([
+            np.interp(days, x, wrapped[:, j]) for j in range(wrapped.shape[1])
+        ], axis=1).astype(np.float32)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            target, climatology=daily,
+            longitude=np.asarray(monthly[lon_name], dtype=np.float32) % 360.0,
+            reference_period=np.asarray("1991-2020"), level_hpa=np.int16(850),
+            latitude_band=np.asarray([-float(width), float(width)], dtype=np.float32),
+        )
+        print(f"Saved {target}")
 
 
 if __name__ == "__main__":

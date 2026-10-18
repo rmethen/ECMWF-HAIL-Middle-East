@@ -10,6 +10,8 @@ import numpy as np
 
 DATA_FILE = Path("data/hovmoller_u850_anomaly.npz")
 OUT_FILE = Path("output/HOVMOLLER_U850_ANOMALY_LATEST.png")
+DATA_FILE_7 = Path("data/hovmoller_u850_anomaly_7NS.npz")
+OUT_FILE_7 = Path("output/HOVMOLLER_U850_ANOMALY_7NS_LATEST.png")
 
 # Fixed scale: never auto-rescale between runs.  This makes extremes directly
 # comparable and preserves the visual convention in the reference product.
@@ -89,8 +91,8 @@ def smooth_hovmoller(field: np.ndarray) -> np.ndarray:
     )
 
 
-def main() -> None:
-    data = np.load(DATA_FILE)
+def plot(data_file: Path, out_file: Path) -> None:
+    data = np.load(data_file)
     lon = np.asarray(data["longitude"], dtype=float)
     times = data["time"].astype("datetime64[m]").astype(object)
     anomaly = np.asarray(data["u_anomaly"], dtype=float)
@@ -124,7 +126,8 @@ def main() -> None:
     title = ("850-hPa Zonal Wind Anomalies (1991–2020)" if is_anomaly
              else "850-hPa Zonal Wind — Operational")
     ax.set_title(title, fontsize=20, pad=12)
-    ax.text(1.0, 1.015, "[5°S–5°N]", transform=ax.transAxes,
+    south, north = np.asarray(data["latitude_band"], dtype=float)
+    ax.text(1.0, 1.015, f"[{abs(south):g}°S–{north:g}°N]", transform=ax.transAxes,
             ha="right", va="bottom", fontsize=16)
 
     cbar = fig.colorbar(mesh, ax=ax, orientation="horizontal", pad=0.09,
@@ -135,10 +138,15 @@ def main() -> None:
              "Black contours (+6, +9, +12 m s⁻¹) emphasize extreme westerly wind bursts"
              + ("" if is_anomaly else " | NOAA climatology temporarily unavailable"),
              ha="center", fontsize=9)
-    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT_FILE, dpi=180, bbox_inches="tight", facecolor="white")
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_file, dpi=180, bbox_inches="tight", facecolor="white")
     plt.close(fig)
-    print(f"Saved {OUT_FILE}")
+    print(f"Saved {out_file}")
+
+
+def main() -> None:
+    plot(DATA_FILE, OUT_FILE)
+    plot(DATA_FILE_7, OUT_FILE_7)
 
 
 if __name__ == "__main__":
