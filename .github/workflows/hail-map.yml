@@ -33,6 +33,7 @@ jobs:
       - name: Generate Middle East hail map
         run: |
           python make_hail_map.py
+          python make_hail_map_wbz_1500_2000.py
       - name: Generate Middle East thunderstorm map
         run: |
           python make_thunderstorm_map.py
@@ -47,6 +48,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png
+          git add output/ECMWF_HAIL_INDEX_WBZ_1500_2000_LATEST.png
           git add output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png
           git add output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png
           git add output/ECMWF_SNOW_ENVIRONMENT_MIDDLE_EAST_LATEST.png
