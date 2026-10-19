@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
 
-from hail_index import hail_potential_v2
+from hail_index import hail_potential_v2, inverse_scale, scale
 
 DATA_FILE = Path("data/hail_diagnostics.npz")
 OUTPUT_FILE = Path("output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png")
@@ -38,8 +38,28 @@ def format_time(value):
     return np.datetime_as_string(np.datetime64(value, "m"), unit="m").replace("T", " ") + " UTC"
 
 
-def draw_map(lons, lats, field, peak_hour, init_time):
-    OUTPUT_FILE.parent.mkdir(exist_ok=True)
+def extreme_ingredient_count(data):
+    """Count strong ingredients; experimental diagnostic, not a hail probability."""
+    li = inverse_scale(data["li850"], -6.0, 2.0)
+    ascent = (
+        0.60 * inverse_scale(data["omega_700"], -1.0, 0.2)
+        + 0.40 * inverse_scale(data["omega_500"], -0.8, 0.15)
+    )
+    return sum(
+        condition.astype(np.uint8)
+        for condition in (
+            scale(data["hgl_depth_m"], 2400.0, 5000.0) >= 0.5,
+            scale(data["shear_850_300"], 10.0, 28.0) >= 0.5,
+            scale(data["lapse_700_500"], 5.5, 8.0) >= 0.5,
+            scale(data["moisture_850"], 5.0, 13.0) >= 0.5,
+            np.maximum(li, ascent) >= 0.5,
+        )
+    )
+
+
+def draw_map(lons, lats, field, peak_hour, init_time, *,
+             output_file=OUTPUT_FILE, map_label=MAP_LABEL, extreme_count=None):
+    output_file.parent.mkdir(exist_ok=True)
     fig = plt.figure(figsize=(14, 9))
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.set_extent([WEST, EAST, SOUTH, NORTH], crs=ccrs.PlateCarree())
@@ -53,6 +73,11 @@ def draw_map(lons, lats, field, peak_hour, init_time):
         lons, lats, display_field, levels=np.arange(0, 101, 10), cmap=white_low_cmap(),
         extend="max", transform=ccrs.PlateCarree(),
     )
+    if extreme_count is not None:
+        ax.contourf(
+            lons, lats, extreme_count, levels=[3.5, 5.5],
+            colors="none", hatches=["////"], transform=ccrs.PlateCarree(),
+        )
     ax.plot(47.98, 29.38, marker="*", color="black", markersize=10,
             transform=ccrs.PlateCarree())
     ax.text(48.3, 29.5, "Kuwait", fontsize=9, transform=ccrs.PlateCarree())
@@ -62,30 +87,32 @@ def draw_map(lons, lats, field, peak_hour, init_time):
     cbar = plt.colorbar(plot, ax=ax, pad=0.025, shrink=0.82)
     cbar.set_label("Experimental Large Hail Potential (0–100)")
     plt.title(
-        f"ECMWF Experimental Large Hail Potential V2 – {MAP_LABEL}\n"
+        f"ECMWF Experimental Large Hail Potential V2 – {map_label}\n"
         f"Init: {format_time(init_time)} | Peak: +{peak_hour} h | "
         f"Valid: {format_time(init_time + np.timedelta64(peak_hour, 'h'))}",
         fontsize=14, weight="bold",
     )
-    plt.figtext(
-        0.5, 0.035,
-        "Large-hail environment: HGL + WBZ + Shear | Support: LI • Lapse • Moisture • Omega 700/500",
-        ha="center", fontsize=9,
-    )
+    if extreme_count is None:
+        footer = "Large-hail environment: HGL + WBZ + Shear | Support: LI • Lapse • Moisture • Omega 700/500"
+    else:
+        footer = "Hatching: 4–5 of 5 strong ingredients at local peak (HGL, shear, lapse, moisture, LI/ascent); uncalibrated"
+    plt.figtext(0.5, 0.035, footer, ha="center", fontsize=9)
     plt.figtext(
         0.06, 0.012, "Signal: 60–79 significant | 80–100 very strong (not hail diameter)",
         ha="left", fontsize=9,
     )
     plt.figtext(
-        0.94, 0.012, f"Max: {np.nanmax(field):.1f}",
+        0.94, 0.012, f"Max V2: {np.nanmax(field):.1f}" +
+        (f" | Extreme ingredients: {np.nanmax(extreme_count):.0f}/5" if extreme_count is not None else ""),
         ha="right", fontsize=10, weight="bold",
     )
-    plt.savefig(OUTPUT_FILE, dpi=160, bbox_inches="tight")
+    plt.savefig(output_file, dpi=160, bbox_inches="tight")
     plt.close()
-    print("Map saved:", OUTPUT_FILE)
+    print("Map saved:", output_file)
 
 
-def main():
+def main(*, wbz_variant="original", output_file=OUTPUT_FILE,
+         map_label=MAP_LABEL, show_extreme=False):
     data = np.load(DATA_FILE)
     index = hail_potential_v2(
         shear06=data["shear_850_300"], wbz_m=data["wbz_m"],
@@ -93,9 +120,18 @@ def main():
         lapse_700_500=data["lapse_700_500"], t500_c=data["t500_c"],
         mixing_ratio=data["moisture_850"], li850=data["li850"],
         omega700=data["omega_700"], omega500=data["omega_500"],
+        wbz_variant=wbz_variant,
     )
     field = np.nanmax(index, axis=0) if index.ndim == 3 else index
     field = smooth_field(field)
+    extreme_count = None
+    if show_extreme:
+        counts = extreme_ingredient_count(data)
+        if index.ndim == 3:
+            local_peak = np.nanargmax(np.where(np.isfinite(index), index, -np.inf), axis=0)
+            extreme_count = np.take_along_axis(counts, local_peak[None], axis=0)[0]
+        else:
+            extreme_count = counts
     step_scores = np.nanmax(index.reshape(index.shape[0], -1), axis=1)
     peak_idx = int(np.nanargmax(step_scores))
     step = data["steps"][peak_idx]
@@ -104,7 +140,8 @@ def main():
         if np.issubdtype(step.dtype, np.timedelta64)
         else int(step)
     )
-    draw_map(data["longitude"], data["latitude"], field, peak_hour, data["init_time"])
+    draw_map(data["longitude"], data["latitude"], field, peak_hour, data["init_time"],
+             output_file=output_file, map_label=map_label, extreme_count=extreme_count)
 
 
 if __name__ == "__main__":
