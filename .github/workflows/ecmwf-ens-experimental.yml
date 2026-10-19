@@ -5,6 +5,7 @@ on:
   schedule:
     # Step 72 ENS fields may arrive 7-9 hours after cycle initialization.
     - cron: '0 11,23 * * *'
+    - cron: '15 13 * * *'
 
 permissions:
   contents: write
