@@ -57,6 +57,9 @@ def hail_potential_v2(
     elif wbz_variant == "1500-2000":
         wbz_low = scale(wbz_m, 1000.0, 1500.0)
         wbz_high = inverse_scale(wbz_m, 2000.0, 4400.0)
+    elif wbz_variant == "1500-3000":
+        wbz_low = scale(wbz_m, 1000.0, 1500.0)
+        wbz_high = inverse_scale(wbz_m, 3000.0, 4400.0)
     else:
         raise ValueError(f"Unknown WBZ variant: {wbz_variant}")
     wbz = np.minimum(wbz_low, wbz_high)
