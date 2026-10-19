@@ -11,4 +11,5 @@ if __name__ == "__main__":
         output_file=Path("output/ECMWF_HAIL_INDEX_WBZ_1500_3000_LATEST.png"),
         map_label="WBZ optimum 1500–3000 m + extreme ingredients",
         show_extreme=True,
+        show_omega=True,
     )
