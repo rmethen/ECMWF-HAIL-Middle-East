@@ -141,6 +141,7 @@ def main():
     u10 = open_surface_field("10u")
     v10 = open_surface_field("10v")
     msl = open_surface_field("msl")
+    mucape = open_surface_field("mucape")
 
     t_c = t - 273.15
     t500_c = get_level(t_c, 500)
@@ -237,6 +238,7 @@ def main():
         z500_m=z500.values,
         moisture_850=moisture_850,
         li850=li850,
+        mucape=mucape.values,
         total_totals=total_totals,
         kuwait_total_totals=kuwait_total_totals,
         wind10=wind10,
