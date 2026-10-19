@@ -5,7 +5,7 @@ from pathlib import Path
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import BoundaryNorm, ListedColormap
 import numpy as np
 
 from hail_index import hail_potential_v2, inverse_scale, scale
@@ -69,15 +69,21 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
     ax.add_feature(cfeature.OCEAN, facecolor="white")
     ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
     ax.add_feature(cfeature.BORDERS, linewidth=0.6)
-    # Keep low values in the contour calculation for the experimental map.
-    # Masking them removes whole cells around small, isolated maxima.
-    display_field = (field if omega_overlay is not None
-                     else np.ma.masked_less(field, 20.0))
-    plot = ax.contourf(
-        lons, lats, display_field, levels=np.arange(0, 101, 10),
-        cmap=white_low_cmap(white_below_20=omega_overlay is not None),
-        extend="max", transform=ccrs.PlateCarree(),
-    )
+    levels = np.arange(0, 101, 10)
+    if omega_overlay is not None:
+        # Color every valid grid cell, including isolated maxima next to NaNs.
+        plot = ax.pcolormesh(
+            lons, lats, field, shading="nearest",
+            cmap=white_low_cmap(white_below_20=True),
+            norm=BoundaryNorm(levels, ncolors=10, clip=True),
+            transform=ccrs.PlateCarree(),
+        )
+    else:
+        display_field = np.ma.masked_less(field, 20.0)
+        plot = ax.contourf(
+            lons, lats, display_field, levels=levels, cmap=white_low_cmap(),
+            extend="max", transform=ccrs.PlateCarree(),
+        )
     if extreme_count is not None:
         ax.contourf(
             lons, lats, extreme_count, levels=[3.5, 5.5],
@@ -106,7 +112,8 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
     grid = ax.gridlines(draw_labels=True, linewidth=0.4, alpha=0.5)
     grid.top_labels = False
     grid.right_labels = False
-    cbar = plt.colorbar(plot, ax=ax, pad=0.025, shrink=0.82)
+    cbar = plt.colorbar(plot, ax=ax, pad=0.025, shrink=0.82,
+                        **({"extend": "max"} if omega_overlay is not None else {}))
     cbar.set_label("Experimental Large Hail Potential (0–100)")
     plt.title(
         f"ECMWF Experimental Large Hail Potential V2 – {map_label}\n"
