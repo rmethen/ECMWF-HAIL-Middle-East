@@ -1,5 +1,13 @@
 name: Generate Hail Map
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hail-map.yml'
+      - 'ecmwf_hail_data.py'
+      - 'process_hail_grib.py'
+      - 'lightning_environment_index.py'
+      - 'make_lightning_environment_map.py'
   schedule:
     - cron: '17 12 * * *'
     - cron: '17 18 * * *'
