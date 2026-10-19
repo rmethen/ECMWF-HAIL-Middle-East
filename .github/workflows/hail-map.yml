@@ -1,6 +1,7 @@
 name: Generate Hail Map
 on:
   schedule:
+    - cron: '17 12 * * *'
     - cron: '17 18 * * *'
   workflow_dispatch:
 permissions:
