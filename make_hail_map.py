@@ -28,9 +28,9 @@ def smooth_field(field):
     return result
 
 
-def white_low_cmap():
+def white_low_cmap(*, white_below_20=False):
     colors = plt.get_cmap("turbo", 10)(np.arange(10))
-    colors[0] = (1.0, 1.0, 1.0, 1.0)
+    colors[:2 if white_below_20 else 1] = (1.0, 1.0, 1.0, 1.0)
     return ListedColormap(colors)
 
 
@@ -69,9 +69,13 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
     ax.add_feature(cfeature.OCEAN, facecolor="white")
     ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
     ax.add_feature(cfeature.BORDERS, linewidth=0.6)
-    display_field = np.ma.masked_less(field, 20.0)
+    # Keep low values in the contour calculation for the experimental map.
+    # Masking them removes whole cells around small, isolated maxima.
+    display_field = (field if omega_overlay is not None
+                     else np.ma.masked_less(field, 20.0))
     plot = ax.contourf(
-        lons, lats, display_field, levels=np.arange(0, 101, 10), cmap=white_low_cmap(),
+        lons, lats, display_field, levels=np.arange(0, 101, 10),
+        cmap=white_low_cmap(white_below_20=omega_overlay is not None),
         extend="max", transform=ccrs.PlateCarree(),
     )
     if extreme_count is not None:
