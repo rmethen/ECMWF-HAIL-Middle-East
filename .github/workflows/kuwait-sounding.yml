@@ -1,5 +1,7 @@
 name: Kuwait experimental Skew-T
 on:
+  schedule:
+    - cron: '17 4 * * *'
   workflow_dispatch:
     inputs:
       forecast_hour:
@@ -19,7 +21,7 @@ jobs:
           python-version: '3.11'
       - name: Validate forecast hour
         env:
-          HOUR: ${{ inputs.forecast_hour }}
+          HOUR: ${{ inputs.forecast_hour || '24' }}
         run: |
           python - <<'PYVALID'
           import os
@@ -31,7 +33,7 @@ jobs:
         run: python -m pip install numpy matplotlib xarray cfgrib ecmwf-opendata metpy
       - name: Fetch and plot Kuwait profile
         env:
-          HOUR: ${{ inputs.forecast_hour }}
+          HOUR: ${{ inputs.forecast_hour || '24' }}
         run: python kuwait_sounding.py --step "$HOUR"
       - uses: actions/upload-artifact@v4
         with:
