@@ -1,5 +1,13 @@
 name: Generate Hail Map
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hail-map.yml'
+      - 'ecmwf_hail_data.py'
+      - 'process_hail_grib.py'
+      - 'lightning_environment_index.py'
+      - 'make_lightning_environment_map.py'
   schedule:
     - cron: '17 12 * * *'
     - cron: '17 18 * * *'
@@ -38,6 +46,7 @@ jobs:
       - name: Generate Middle East thunderstorm map
         run: |
           python make_thunderstorm_map.py
+          python make_lightning_environment_map.py
       - name: Generate Middle East dust and wall-storm map
         run: |
           python make_dust_map.py
@@ -51,6 +60,7 @@ jobs:
           git add output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png
           git add output/ECMWF_HAIL_INDEX_WBZ_1500_3000_LATEST.png
           git add output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png
+          git add output/ECMWF_LIGHTNING_ENVIRONMENT_EXPERIMENTAL_LATEST.png
           git add output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png
           git add output/ECMWF_SNOW_ENVIRONMENT_MIDDLE_EAST_LATEST.png
           git diff --cached --quiet || git commit -m "Update experimental severe-weather maps"
