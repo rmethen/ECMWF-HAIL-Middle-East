@@ -25,7 +25,10 @@ def download_fields():
     anchor = now.replace(hour=(now.hour // 12) * 12, minute=0, second=0, microsecond=0)
     for offset in (0, 12):
         cycle = anchor - timedelta(hours=offset)
-        if now - cycle < timedelta(hours=8) or now - cycle > timedelta(hours=15):
+        # Probe the actual mirrors once a cycle is six hours old; a hard
+        # eight-hour gate skips already complete fields during manual updates.
+        # The decoded initialization time is still checked before publication.
+        if now - cycle < timedelta(hours=6) or now - cycle > timedelta(hours=15):
             continue
         for source in ("azure", "ecmwf"):
             try:
@@ -110,4 +113,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
