@@ -3,7 +3,7 @@ name: Experimental ECMWF ENS Scenarios
 on:
   push:
     branches: [main]
-    paths: [ecmwf_ens_precip.py, .github/workflows/ecmwf-ens-experimental.yml]
+    paths: [ecmwf_ens_precip.py, make_ecmwf_ens_maps.py, ensemble_percentiles.py, .github/workflows/ecmwf-ens-experimental.yml]
   workflow_dispatch:
   schedule:
     # Step 72 ENS fields may arrive 7-9 hours after cycle initialization.
@@ -29,7 +29,7 @@ jobs:
           pip install numpy xarray cfgrib eccodes ecmwf-opendata matplotlib cartopy
       - name: Download all ECMWF ENS precipitation members
         run: python ecmwf_ens_precip.py
-      - name: Generate agreement and extreme-scenario maps
+      - name: Generate agreement, wettest-member and P80/P90 maps
         run: python make_ecmwf_ens_maps.py
       - name: Commit experimental ECMWF ENS products
         run: |
@@ -37,8 +37,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add output/ECMWF_ENS_PRECIP_AGREEMENT_0_72H_LATEST.png
           git add output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png
+          git add output/ECMWF_ENS_PRECIP_P80_0_72H_LATEST.png
+          git add output/ECMWF_ENS_PRECIP_P90_0_72H_LATEST.png
           git add output/ecmwf_ens_status.json
           git diff --cached --quiet || git commit -m "Update experimental ECMWF ENS rainfall maps"
           git pull --rebase origin main
           git push
-

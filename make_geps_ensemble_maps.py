@@ -7,6 +7,8 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ensemble_percentiles import PRECIP_LEVELS, plot_percentiles
+
 
 DATA_FILE = Path("data/geps_precip_ensemble.npz")
 OUT_PROB = Path("output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png")
@@ -70,7 +72,7 @@ def main():
         f"Init: {init} UTC"
     )
     shown = np.ma.masked_less(wettest, 1.0)
-    levels = [1, 5, 10, 25, 50, 75, 100, 150, 200]
+    levels = PRECIP_LEVELS
     plot = ax.contourf(
         lons, lats, shown, levels=levels, cmap="turbo",
         extend="max", transform=ccrs.PlateCarree(),
@@ -82,7 +84,10 @@ def main():
                 ha="center")
     plt.savefig(OUT_MAX, dpi=160, bbox_inches="tight")
     plt.close(fig)
-    print("Saved:", OUT_PROB, OUT_MAX)
+    percentile_paths = plot_percentiles(
+        rain, lats, lons, init, "Canadian GEPS", "GEPS_PRECIP", base_ax,
+    )
+    print("Saved:", OUT_PROB, OUT_MAX, *percentile_paths)
 
 
 if __name__ == "__main__":

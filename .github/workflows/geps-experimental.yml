@@ -1,6 +1,9 @@
 name: Canadian GEPS Ensemble Scenarios
 
 on:
+  push:
+    branches: [main]
+    paths: [geps_ensemble_precip.py, make_geps_ensemble_maps.py, ensemble_percentiles.py, .github/workflows/geps-experimental.yml]
   workflow_dispatch:
   schedule:
     - cron: "20 6,18 * * *"
@@ -30,7 +33,7 @@ jobs:
           pip install numpy requests xarray cfgrib eccodes matplotlib cartopy
       - name: Download Canadian GEPS precipitation members
         run: python geps_ensemble_precip.py
-      - name: Generate agreement and extreme-scenario maps
+      - name: Generate agreement, wettest-member and P80/P90 maps
         run: python make_geps_ensemble_maps.py
       - name: Commit Canadian GEPS products
         run: |
@@ -38,6 +41,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add output/GEPS_PRECIP_AGREEMENT_0_72H_LATEST.png
           git add output/GEPS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png
+          git add output/GEPS_PRECIP_P80_0_72H_LATEST.png
+          git add output/GEPS_PRECIP_P90_0_72H_LATEST.png
           git add output/geps_ensemble_status.json
           git diff --cached --quiet || git commit -m "Update Canadian GEPS rainfall maps"
+          git pull --rebase origin main
           git push
