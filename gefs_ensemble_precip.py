@@ -54,27 +54,37 @@ def request_params(cycle, member, step):
 
 def find_cycle():
     for cycle in candidate_cycles():
-        response = requests.get(
-            FILTER, params=request_params(cycle, "c00", 6), timeout=45
-        )
-        if response.ok and len(response.content) > 1000 and b"GRIB" in response.content[:32]:
-            return cycle
+        if datetime.now(timezone.utc) - cycle < timedelta(hours=6):
+            continue
+        try:
+            # The final member and forecast hour must exist before a cycle is selected.
+            response = requests.get(
+                FILTER, params=request_params(cycle, "p30", 72), timeout=45
+            )
+            if response.ok and len(response.content) > 1000 and b"GRIB" in response.content[:32]:
+                return cycle
+        except requests.RequestException as exc:
+            print(f"Cycle probe failed: {cycle}: {exc}")
     raise RuntimeError("No complete recent GEFS cycle was found")
 
 
 def download_one(cycle, member, step):
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    target = DATA_DIR / f"{member}_f{step:03d}.grib2"
+    cycle_dir = DATA_DIR / cycle.strftime("%Y%m%d%H")
+    cycle_dir.mkdir(parents=True, exist_ok=True)
+    target = cycle_dir / f"{member}_f{step:03d}.grib2"
     if target.exists() and target.stat().st_size > 1000:
         return member, step, target
-    for attempt in range(3):
-        response = requests.get(
-            FILTER, params=request_params(cycle, member, step), timeout=90
-        )
-        if response.ok and len(response.content) > 1000 and b"GRIB" in response.content[:32]:
-            target.write_bytes(response.content)
-            return member, step, target
-        time.sleep(2 ** attempt)
+    for attempt in range(6):
+        try:
+            response = requests.get(
+                FILTER, params=request_params(cycle, member, step), timeout=90
+            )
+            if response.ok and len(response.content) > 1000 and b"GRIB" in response.content[:32]:
+                target.write_bytes(response.content)
+                return member, step, target
+        except requests.RequestException as exc:
+            print(f"Retry {member} f{step:03d}: {exc}")
+        time.sleep(min(30, 2 ** (attempt + 1)))
     raise RuntimeError(f"GEFS download failed: {member} f{step:03d}")
 
 
@@ -106,7 +116,7 @@ def main():
     cycle = find_cycle()
     write_status(cycle, "downloading", "GEFS precipitation members", 0)
     files = {}
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futures = [pool.submit(download_one, cycle, m, s) for m in MEMBERS for s in STEPS]
         for future in as_completed(futures):
             member, step, path = future.result()
@@ -135,3 +145,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

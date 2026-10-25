@@ -21,17 +21,23 @@ ENS_NUMBERS = list(range(1, 51))
 
 def download_fields():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    # Azure is typically closest to GitHub-hosted runners and avoids portal limits.
-    client = Client(source="azure", model="ifs", resol="0p25")
-    request = {
-        "stream": "enfo",
-        "step": 72,
-        "param": "tp",
-    }
-    print("Downloading all 50 available ECMWF ENS perturbed members...")
-    client.retrieve(
-        type="pf", number=ENS_NUMBERS, target=str(PF_FILE), **request
-    )
+    now = datetime.now(timezone.utc)
+    anchor = now.replace(hour=(now.hour // 12) * 12, minute=0, second=0, microsecond=0)
+    for offset in (0, 12):
+        cycle = anchor - timedelta(hours=offset)
+        if now - cycle < timedelta(hours=8) or now - cycle > timedelta(hours=15):
+            continue
+        for source in ("azure", "ecmwf"):
+            try:
+                client = Client(source=source, model="ifs", resol="0p25")
+                client.retrieve(date=cycle.strftime("%Y%m%d"), time=cycle.hour,
+                                stream="enfo", step=72, param="tp", type="pf",
+                                number=ENS_NUMBERS, target=str(PF_FILE) + ".part")
+                Path(str(PF_FILE) + ".part").replace(PF_FILE)
+                return
+            except Exception as exc:
+                print(f"ENS {cycle.isoformat()} {source} unavailable: {exc}")
+    raise RuntimeError("No complete recent ECMWF ENS cycle on either mirror")
 
 
 def open_tp(path, data_type):
@@ -104,3 +110,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

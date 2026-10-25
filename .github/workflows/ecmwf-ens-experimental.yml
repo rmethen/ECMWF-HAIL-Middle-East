@@ -1,11 +1,13 @@
 name: Experimental ECMWF ENS Scenarios
 
 on:
+  push:
+    branches: [main]
+    paths: [ecmwf_ens_precip.py, .github/workflows/ecmwf-ens-experimental.yml]
   workflow_dispatch:
   schedule:
     # Step 72 ENS fields may arrive 7-9 hours after cycle initialization.
-    - cron: '0 11,23 * * *'
-    - cron: '15 13 * * *'
+    - cron: '15 9,12,21,0 * * *'
 
 permissions:
   contents: write
@@ -37,4 +39,6 @@ jobs:
           git add output/ECMWF_ENS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png
           git add output/ecmwf_ens_status.json
           git diff --cached --quiet || git commit -m "Update experimental ECMWF ENS rainfall maps"
+          git pull --rebase origin main
           git push
+

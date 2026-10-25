@@ -1,6 +1,9 @@
 name: Experimental Ensemble Scenarios
 
 on:
+  push:
+    branches: [main]
+    paths: [gefs_ensemble_precip.py, .github/workflows/ensemble-experimental.yml]
   workflow_dispatch:
   schedule:
     - cron: '30 6,18 * * *'
@@ -36,4 +39,6 @@ jobs:
           git add output/GEFS_PRECIP_WETTEST_MEMBER_0_72H_LATEST.png
           git add output/ensemble_status.json
           git diff --cached --quiet || git commit -m "Update experimental GEFS ensemble rainfall maps"
+          git pull --rebase origin main
           git push
+
