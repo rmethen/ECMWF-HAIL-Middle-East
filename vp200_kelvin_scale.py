@@ -98,7 +98,7 @@ def plot(filtered, lat, lon, cycle, history_days):
                    alpha=0.35, transform=ccrs.PlateCarree())
         ax.coastlines(resolution="110m", linewidth=0.7)
         ax.add_feature(cfeature.BORDERS.with_scale("110m"), linewidth=0.25)
-        ax.set_extent([0, 360, -25, 25], crs=ccrs.PlateCarree())
+        ax.set_extent([0, 360, -25, 40], crs=ccrs.PlateCarree())
         ax.set_title(f"{label}  |  {cycle + timedelta(days=lead):%d %b %Y %H UTC}", loc="left", fontsize=12)
         grid = ax.gridlines(draw_labels=True, linewidth=0.2, color="0.45", alpha=0.3)
         grid.top_labels = grid.right_labels = False
