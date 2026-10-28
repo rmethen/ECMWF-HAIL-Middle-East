@@ -59,7 +59,7 @@ def extreme_ingredient_count(data):
 
 def draw_map(lons, lats, field, peak_hour, init_time, *,
              output_file=OUTPUT_FILE, map_label=MAP_LABEL, extreme_count=None,
-             omega_overlay=None):
+             omega_overlay=None, gfs_support=None):
     output_file.parent.mkdir(exist_ok=True)
     fig = plt.figure(figsize=(14, 9))
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -89,6 +89,10 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
             lons, lats, extreme_count, levels=[3.5, 5.5],
             colors="none", hatches=["////"], transform=ccrs.PlateCarree(),
         )
+    if gfs_support is not None:
+        glon, glat, signal, source = gfs_support
+        ax.contourf(glon, glat, signal, levels=[0.5, 1.5], colors="none",
+                    hatches=["...."], transform=ccrs.PlateCarree())
     if omega_overlay is not None:
         # ECMWF pressure velocity (Pa/s): more negative means stronger
         # model-resolved ascent, not a thunderstorm updraft speed in m/s.
@@ -132,6 +136,10 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
                 ha="center", fontsize=9,
             )
     plt.figtext(0.5, 0.035, footer, ha="center", fontsize=9)
+    if gfs_support is not None:
+        plt.figtext(0.5, 0.068,
+                    f"Dotted: {gfs_support[3]} simulated reflectivity ≥35 dBZ and rain rate ≥1 mm/h; model storm support, not observed hail",
+                    ha="center", fontsize=8)
     plt.figtext(
         0.06, 0.012, "Signal: 60–79 significant | 80–100 very strong (not hail diameter)",
         ha="left", fontsize=9,
@@ -184,9 +192,17 @@ def main(*, wbz_variant="original", output_file=OUTPUT_FILE,
         if np.issubdtype(step.dtype, np.timedelta64)
         else int(step)
     )
+    gfs_support = None
+    if output_file == OUTPUT_FILE:
+        try:
+            from gfs_hail_support import storm_support
+            valid = np.datetime64(data["init_time"].item()) + np.timedelta64(peak_hour, "h")
+            gfs_support = storm_support(valid)
+        except Exception as exc:
+            print(f"Optional GFS storm overlay unavailable: {exc}")
     draw_map(data["longitude"], data["latitude"], field, peak_hour, data["init_time"],
              output_file=output_file, map_label=map_label, extreme_count=extreme_count,
-             omega_overlay=omega_overlay)
+             omega_overlay=omega_overlay, gfs_support=gfs_support)
 
 
 if __name__ == "__main__":
