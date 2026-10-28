@@ -6,6 +6,8 @@ on:
       - '.github/workflows/hail-map.yml'
       - 'ecmwf_hail_data.py'
       - 'process_hail_grib.py'
+      - 'gfs_hail_support.py'
+      - 'make_hail_map.py'
       - 'lightning_environment_index.py'
       - 'make_lightning_environment_map.py'
   schedule:
