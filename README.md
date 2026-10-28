@@ -17,3 +17,9 @@ are experimental diagnostics and are not official ECMWF products. The
 thunderstorm product is a potential index, not direct lightning-flash density.
 The hail index highlights environments supportive of large hail; it is not a
 forecast of hailstone diameter in centimetres.
+
+The primary hail map also shows a dotted GFS forecast storm-support overlay
+when a GFS run matches the ECMWF peak valid time (simulated reflectivity
+≥35 dBZ and instantaneous rain rate ≥1 mm/h). It is independent model
+guidance, not observed radar or hail confirmation; the ECMWF hail index
+and its score are unchanged if GFS is unavailable.
