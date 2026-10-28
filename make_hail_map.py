@@ -9,6 +9,10 @@ from matplotlib.colors import BoundaryNorm, ListedColormap
 import numpy as np
 
 from hail_index import hail_potential_v2, inverse_scale, scale
+from hail_report import (
+    CITIES, city_diagnostics, draw_city_table, draw_diagnostics, forecast_hours,
+    format_time, peak_fields, related_output, valid_time, write_city_csv,
+)
 
 DATA_FILE = Path("data/hail_diagnostics.npz")
 OUTPUT_FILE = Path("output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png")
@@ -34,10 +38,6 @@ def white_low_cmap(*, white_below_20=False):
     return ListedColormap(colors)
 
 
-def format_time(value):
-    return np.datetime_as_string(np.datetime64(value, "m"), unit="m").replace("T", " ") + " UTC"
-
-
 def extreme_ingredient_count(data):
     """Count strong ingredients; experimental diagnostic, not a hail probability."""
     li = inverse_scale(data["li850"], -6.0, 2.0)
@@ -59,10 +59,10 @@ def extreme_ingredient_count(data):
 
 def draw_map(lons, lats, field, peak_hour, init_time, *,
              output_file=OUTPUT_FILE, map_label=MAP_LABEL, extreme_count=None,
-             omega_overlay=None):
-    output_file.parent.mkdir(exist_ok=True)
-    fig = plt.figure(figsize=(14, 9))
-    ax = plt.axes(projection=ccrs.PlateCarree())
+             omega_overlay=None, hours=None, city_rows=None, timing=False):
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    fig = plt.figure(figsize=(16, 12))
+    ax = fig.add_axes([0.065, 0.26, 0.80, 0.58], projection=ccrs.PlateCarree())
     ax.set_extent([WEST, EAST, SOUTH, NORTH], crs=ccrs.PlateCarree())
     ax.set_facecolor("white")
     ax.add_feature(cfeature.LAND, facecolor="white")
@@ -70,7 +70,16 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
     ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
     ax.add_feature(cfeature.BORDERS, linewidth=0.6)
     levels = np.arange(0, 101, 10)
-    if omega_overlay is not None:
+    if timing:
+        # Mask cells without a meaningful V2 signal; a zero score has no
+        # useful peak time. Values are actual forecast leads, not array indices.
+        spacing = float(np.min(np.diff(hours))) if len(hours) > 1 else 1.0
+        timing_levels = np.r_[hours - spacing / 2, hours[-1] + spacing / 2]
+        plot = ax.pcolormesh(
+            lons, lats, np.ma.masked_invalid(field), shading="nearest", cmap="viridis",
+            norm=BoundaryNorm(timing_levels, ncolors=256), transform=ccrs.PlateCarree(),
+        )
+    elif omega_overlay is not None:
         # Color every valid grid cell, including isolated maxima next to NaNs.
         plot = ax.pcolormesh(
             lons, lats, field, shading="nearest",
@@ -106,21 +115,38 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
                 )
                 ax.clabel(contours, fmt=lambda value: f"{value:.1f}",
                           inline=True, fontsize=8)
-    ax.plot(47.98, 29.38, marker="*", color="black", markersize=10,
-            transform=ccrs.PlateCarree())
-    ax.text(48.3, 29.5, "Kuwait", fontsize=9, transform=ccrs.PlateCarree())
+    for name, lat, lon, offset in CITIES:
+        ax.plot(lon, lat, marker="*" if name == "Kuwait" else "o", color="black",
+                markersize=7 if name == "Kuwait" else 3,
+                transform=ccrs.PlateCarree())
+        ax.annotate(name, xy=(lon, lat), xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
+                    xytext=offset, textcoords="offset points", fontsize=9,
+                    bbox=dict(facecolor="white", edgecolor="none", alpha=0.75, pad=1))
     grid = ax.gridlines(draw_labels=True, linewidth=0.4, alpha=0.5)
     grid.top_labels = False
     grid.right_labels = False
-    cbar = plt.colorbar(plot, ax=ax, pad=0.025, shrink=0.82,
+    cax = fig.add_axes([0.89, 0.31, 0.018, 0.48])
+    cbar = fig.colorbar(plot, cax=cax,
                         **({"extend": "max"} if omega_overlay is not None else {}))
-    cbar.set_label("Experimental Large Hail Potential (0–100)")
-    plt.title(
+    cbar.set_label("Local V2 peak lead time (hours from Init)" if timing
+                   else "Experimental Large Hail Potential (0–100)")
+    if timing:
+        cbar.set_ticks(hours[::max(1, int(np.ceil(len(hours) / 10)))])
+    fig.suptitle(
         f"ECMWF Experimental Large Hail Potential V2 – {map_label}\n"
-        f"Init: {format_time(init_time)} | Peak: +{peak_hour} h | "
-        f"Valid: {format_time(init_time + np.timedelta64(peak_hour, 'h'))}",
-        fontsize=14, weight="bold",
-    )
+        + ("Local peak timing (raw V2 >= 20)" if timing else "Maximum over forecast period"),
+        fontsize=15, weight="bold", y=0.97)
+    if hours is None:
+        hours = np.array([peak_hour], dtype=float)
+    fig.text(0.5, 0.907,
+             f"Init: {format_time(init_time)} | Forecast: +{hours[0]:g} to +{hours[-1]:g} h\n"
+             f"Period (UTC+3): {format_time(valid_time(init_time, hours[0]), local=True)}"
+             f" to {format_time(valid_time(init_time, hours[-1]), local=True)}\n"
+             f"Domain-wide raw V2 maximum: +{peak_hour:g} h"
+             f" ({format_time(valid_time(init_time, peak_hour), local=True)}); city peaks differ",
+             ha="center", va="center", fontsize=10)
+    if city_rows is not None:
+        draw_city_table(fig, city_rows)
     if extreme_count is None:
         footer = "Large-hail environment: HGL + WBZ + Shear | Support: LI • Lapse • Moisture • Omega 700/500"
     else:
@@ -131,13 +157,20 @@ def draw_map(lons, lats, field, peak_hour, init_time, *,
                 "Purple: ECMWF 700/500 hPa omega at local V2 peak (dashed -0.3, solid -0.6 Pa/s); model-scale ascent, not storm updraft",
                 ha="center", fontsize=9,
             )
+    if timing:
+        footer = "First sampled maximum per grid cell; blank where raw maximum < 20 or missing. No interpolation between forecast times."
     plt.figtext(0.5, 0.035, footer, ha="center", fontsize=9)
+    plt.figtext(0.5, 0.225,
+                "Table: raw V2 at nearest grid point; map colors are smoothed. Ties use the first forecast time."
+                if not timing else "Timing uses raw V2; UTC+3 applies to Saudi Arabia and Kuwait.",
+                ha="center", fontsize=9)
     plt.figtext(
-        0.06, 0.012, "Signal: 60–79 significant | 80–100 very strong (not hail diameter)",
+        0.06, 0.012, ("Lead time is measured from model initialization" if timing else
+                      "Signal: 60–79 significant | 80–100 very strong (not hail diameter)"),
         ha="left", fontsize=9,
     )
     plt.figtext(
-        0.94, 0.012, f"Max V2: {np.nanmax(field):.1f}" +
+        0.94, 0.012, ("Local peak timing" if timing else f"Smoothed map max V2: {np.nanmax(field):.1f}") +
         (f" | Extreme ingredients: {np.nanmax(extreme_count):.0f}/5" if extreme_count is not None else ""),
         ha="right", fontsize=10, weight="bold",
     )
@@ -157,37 +190,41 @@ def main(*, wbz_variant="original", output_file=OUTPUT_FILE,
         omega700=data["omega_700"], omega500=data["omega_500"],
         wbz_variant=wbz_variant,
     )
-    field = np.nanmax(index, axis=0) if index.ndim == 3 else index
-    field = smooth_field(field)
+    index, raw_field, local_peak = peak_fields(index)
+    hours = forecast_hours(data["steps"], index.shape[0])
+    field = smooth_field(raw_field)
+    counts = extreme_ingredient_count(data)
+    if counts.ndim == 2:
+        counts = counts[None]
+    city_rows = city_diagnostics(data, index, hours, counts, field)
     extreme_count = None
     omega_overlay = None
-    if show_extreme or show_omega:
-        if index.ndim == 3:
-            local_peak = np.nanargmax(np.where(np.isfinite(index), index, -np.inf), axis=0)
     if show_extreme:
-        counts = extreme_ingredient_count(data)
-        if index.ndim == 3:
-            extreme_count = np.take_along_axis(counts, local_peak[None], axis=0)[0]
-        else:
-            extreme_count = counts
+        extreme_count = np.take_along_axis(counts, local_peak[None], axis=0)[0].astype(float)
+        extreme_count[~np.isfinite(raw_field)] = np.nan
     if show_omega:
         omega = 0.60 * data["omega_700"] + 0.40 * data["omega_500"]
-        omega_overlay = (
-            np.take_along_axis(omega, local_peak[None], axis=0)[0]
-            if index.ndim == 3 else omega
-        )
-    step_scores = np.nanmax(index.reshape(index.shape[0], -1), axis=1)
-    peak_idx = int(np.nanargmax(step_scores))
-    step = data["steps"][peak_idx]
-    peak_hour = (
-        int(step / np.timedelta64(1, "h"))
-        if np.issubdtype(step.dtype, np.timedelta64)
-        else int(step)
-    )
+        if omega.ndim == 2:
+            omega = omega[None]
+        omega_overlay = np.take_along_axis(omega, local_peak[None], axis=0)[0]
+        omega_overlay[~np.isfinite(raw_field)] = np.nan
+    safe = np.where(np.isfinite(index), index, -np.inf)
+    peak_idx = np.unravel_index(np.argmax(safe), index.shape)[0]
+    peak_hour = hours[peak_idx]
     draw_map(data["longitude"], data["latitude"], field, peak_hour, data["init_time"],
              output_file=output_file, map_label=map_label, extreme_count=extreme_count,
-             omega_overlay=omega_overlay)
+             omega_overlay=omega_overlay, hours=hours, city_rows=city_rows)
+    timing_field = np.where(np.isfinite(raw_field) & (raw_field >= 20), hours[local_peak], np.nan)
+    draw_map(data["longitude"], data["latitude"], timing_field, peak_hour, data["init_time"],
+             output_file=related_output(output_file, "PEAK_TIME"), map_label=map_label,
+             hours=hours, city_rows=city_rows, timing=True)
+    draw_diagnostics(related_output(output_file, "CITY_DIAGNOSTICS"), city_rows,
+                     data["init_time"], hours, map_label)
+    write_city_csv(related_output(output_file, "CITY_DIAGNOSTICS", "csv"), city_rows,
+                   data["init_time"], hours, wbz_variant)
+    data.close()
 
 
 if __name__ == "__main__":
     main()
+
