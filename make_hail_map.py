@@ -196,7 +196,7 @@ def main(*, wbz_variant="original", output_file=OUTPUT_FILE,
     if output_file == OUTPUT_FILE:
         try:
             from gfs_hail_support import storm_support
-            valid = np.datetime64(data["init_time"].item()) + np.timedelta64(peak_hour, "h")
+            valid = np.datetime64(data["init_time"]) + np.timedelta64(peak_hour, "h")
             gfs_support = storm_support(valid)
         except Exception as exc:
             print(f"Optional GFS storm overlay unavailable: {exc}")
