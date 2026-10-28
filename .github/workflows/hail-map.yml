@@ -8,6 +8,7 @@ on:
       - 'process_hail_grib.py'
       - 'gfs_hail_support.py'
       - 'make_hail_map.py'
+      - 'combined_hail_map.py'
       - 'lightning_environment_index.py'
       - 'make_lightning_environment_map.py'
   schedule:
@@ -36,7 +37,7 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
-          pip install numpy matplotlib cartopy ecmwf-opendata xarray cfgrib
+          pip install numpy scipy matplotlib cartopy ecmwf-opendata xarray cfgrib eccodes
       - name: Test ECMWF real data download
         run: |
           python ecmwf_hail_data.py
@@ -47,6 +48,9 @@ jobs:
         run: |
           python make_hail_map.py
           python make_hail_map_wbz_1500_3000.py
+      - name: Generate time-matched ECMWF and GFS agreement map
+        continue-on-error: true
+        run: python combined_hail_map.py
       - name: Generate Middle East thunderstorm map
         run: |
           python make_thunderstorm_map.py
@@ -65,6 +69,7 @@ jobs:
           git add output/hail_status.json
           git add output/ECMWF_HAIL_INDEX_MIDDLE_EAST_LATEST.png
           git add output/ECMWF_HAIL_INDEX_WBZ_1500_3000_LATEST.png
+          if test -f output/ECMWF_GFS_HAIL_AGREEMENT_LATEST.png; then git add output/ECMWF_GFS_HAIL_AGREEMENT_LATEST.png; fi
           git add output/ECMWF_THUNDERSTORM_LIGHTNING_POTENTIAL_LATEST.png
           git add output/ECMWF_LIGHTNING_ENVIRONMENT_EXPERIMENTAL_LATEST.png
           git add output/ECMWF_DUST_WALL_STORM_POTENTIAL_LATEST.png

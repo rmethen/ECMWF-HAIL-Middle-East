@@ -30,3 +30,10 @@ velocity. It applies the same experimental V2 ingredients and fixed thresholds
 as the ECMWF hail map across +6 to +72 hours, then publishes
 `output/GFS_HAIL_INDEX_MIDDLE_EAST_LATEST.png`. The two models are not
 observations and their index values are not calibrated hail probabilities.
+
+`combined_hail_map.py` creates an ECMWF–GFS **agreement** map from the two
+V2 scores at the same run and valid hour. It takes the lower score at each
+matched hour, then the maximum across +6 to +72 hours on the ECMWF grid.
+This conservative comparison is an experimental agreement diagnostic, not a
+calibrated probability. It runs only after ECMWF diagnostics exist; a missing
+GFS cycle leaves the existing ECMWF maps available.
