@@ -1,0 +1,29 @@
+name: GFS SHIP real-data smoke test
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download one real GFS +6h GRIB
+        run: python download_gfs_ship_sample.py
+      - name: Inspect GRIB records
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libeccodes-tools
+          grib_ls -p shortName,typeOfLevel,level data/gfs_ship_f006.grib2 | head -70
+      - name: Preserve raw sample for analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: gfs-ship-f006-raw-sample
+          path: data/gfs_ship_f006.grib2
+          retention-days: 3
