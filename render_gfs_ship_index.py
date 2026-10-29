@@ -34,6 +34,26 @@ def render_ship(lon, lat, ship, *, cycle_utc, valid_utc,
     ax.set_xlabel("Longitude E")
     ax.set_ylabel("Latitude N")
     ax.grid(alpha=.2)
+    # Optional coastline/country boundaries; plotting remains usable offline.
+    try:
+        import cartopy.crs as ccrs
+        import cartopy.feature as cfeature
+        # The existing axes are plain geographic lon/lat, so use geometries
+        # directly rather than attaching Cartopy GeoAxes to this subplot.
+        from cartopy.io import shapereader
+        for resolution, category, name, color, lw in [
+            ("110m", "cultural", "admin_0_boundary_lines_land", "#404040", .6),
+            ("110m", "physical", "coastline", "#404040", .7),
+        ]:
+            path = shapereader.natural_earth(resolution, category, name)
+            for geom in shapereader.Reader(path).geometries():
+                parts = list(geom.geoms) if hasattr(geom, "geoms") else [geom]
+                for part in parts:
+                    if hasattr(part, "xy"):
+                        x, y = part.xy
+                        ax.plot(x, y, color=color, linewidth=lw, alpha=.8)
+    except (ImportError, OSError):
+        pass
     ax.set_title("GFS SHIP — Significant Hail Parameter (index)\n"
                  f"Run: {cycle_utc} UTC   Valid: {valid_utc} UTC", weight="bold")
     cb = fig.colorbar(im, ax=ax, orientation="horizontal", pad=.07,
