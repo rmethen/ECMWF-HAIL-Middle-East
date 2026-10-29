@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 from gfs_ship_inputs import pressure_profile_url
+from gfs_ship_surface import surface_url
 
 OUT = Path("data/gfs_ship_f006.grib2")
 
@@ -33,6 +34,17 @@ def download_one(cycle, output=OUT):
             temp.replace(output)
         finally:
             temp.unlink(missing_ok=True)
+    # Same cycle, forecast lead and domain for surface boundary conditions.
+    surface = Path("data/gfs_ship_surface_f006.grib2")
+    with urlopen(Request(surface_url(cycle, 6), headers={"User-Agent": "ECMWF-HAIL-SHIP-research/1.0"}), timeout=180) as response:
+        if response.read(4) != b"GRIB":
+            raise ValueError("NOMADS surface response was not GRIB")
+        with surface.open("wb") as handle:
+            handle.write(b"GRIB")
+            while chunk := response.read(1024 * 1024):
+                handle.write(chunk)
+    if surface.stat().st_size < 1000:
+        raise ValueError("GFS surface file unexpectedly small")
     return output
 
 
