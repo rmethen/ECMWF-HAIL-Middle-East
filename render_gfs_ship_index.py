@@ -21,8 +21,11 @@ def render_ship(lon, lat, ship, *, cycle_utc, valid_utc,
                 region=(20, 65, 10, 45)):
     """Render verified SHIP index values, not a hail probability or hail size."""
     ship = np.asarray(ship, dtype=float)
-    if ship.shape != np.broadcast_shapes(np.shape(lat), np.shape(lon), ship.shape):
-        raise ValueError("Coordinate and SHIP grid dimensions disagree")
+    if np.ndim(lon) == 1 and np.ndim(lat) == 1:
+        if ship.shape != (len(lat), len(lon)):
+            raise ValueError("1D coordinates do not match SHIP grid")
+    elif np.shape(lon) != ship.shape or np.shape(lat) != ship.shape:
+        raise ValueError("2D coordinates do not match SHIP grid")
     if not np.isfinite(ship).any() or np.nanmin(ship) < 0:
         raise ValueError("SHIP grid must contain nonnegative finite values")
     fig, ax = plt.subplots(figsize=(12, 9), layout="constrained")
