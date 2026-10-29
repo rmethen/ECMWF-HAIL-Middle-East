@@ -1,5 +1,10 @@
 name: GFS SHIP real-data smoke test
 on:
+  pull_request:
+    paths:
+      - 'download_gfs_ship_sample.py'
+      - 'gfs_ship_inputs.py'
+      - '.github/workflows/gfs-ship-sample.yml'
   workflow_dispatch:
 
 permissions:
