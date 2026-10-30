@@ -1,8 +1,8 @@
 {
-  "updated_utc": "2026-10-30T13:12:55.854446+00:00",
+  "updated_utc": "2026-10-30T18:15:07.698538+00:00",
   "state": "ready",
   "system": "Canadian GEPS",
   "available_members": 20,
   "forecast_hour": 72,
-  "cycle": "2026-10-30 00 UTC"
+  "cycle": "2026-10-30 12 UTC"
 }
