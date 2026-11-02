@@ -119,7 +119,7 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         ascent = np.zeros(self.shape)
         ascent[5, 5] = 0.50
         ascent[5, 6] = 0.42
-        cores = find_ascent_cores(ascent)
+        cores = find_ascent_cores(ascent, threshold=0.25, neighborhood=5)
         self.assertTrue(cores[5, 5])
         self.assertFalse(cores[5, 6])
         self.assertEqual(int(cores.sum()), 1)
@@ -127,15 +127,26 @@ class GFSUpperDynamicsTests(unittest.TestCase):
     def test_plateau_produces_only_one_dot(self):
         ascent = np.zeros(self.shape)
         ascent[4:6, 4:6] = 0.40
-        cores = find_ascent_cores(ascent)
+        cores = find_ascent_cores(ascent, threshold=0.25, neighborhood=5)
         self.assertEqual(int(cores.sum()), 1)
         self.assertTrue(cores[4:6, 4:6].any())
+
+    def test_default_albany_scale_half_pascal_and_wider_suppression(self):
+        ascent = np.zeros(self.shape)
+        ascent[2, 2] = 0.49  # below the 0.5 Pa/s plotting threshold
+        ascent[7, 7] = 0.72
+        ascent[7, 9] = 0.64  # weaker neighbor inside default 9x9 window
+        cores = find_ascent_cores(ascent)
+        self.assertFalse(cores[2, 2])
+        self.assertTrue(cores[7, 7])
+        self.assertFalse(cores[7, 9])
+        self.assertEqual(int(cores.sum()), 1)
 
     def test_ascent_cores_handle_nan_and_reject_invalid_inputs(self):
         ascent = np.zeros(self.shape)
         ascent[1, 1] = np.nan
         ascent[7, 7] = 0.36
-        cores = find_ascent_cores(ascent)
+        cores = find_ascent_cores(ascent, threshold=0.25, neighborhood=5)
         self.assertTrue(cores[7, 7])
         self.assertFalse(cores[1, 1])
         with self.assertRaises(ValueError):
