@@ -396,6 +396,18 @@ def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None
     if status_output is not None:
         status_path = Path(status_output)
         status_path.parent.mkdir(parents=True, exist_ok=True)
+        # Never publish a fallback run older than the currently visible cycle.
+        if status_path.exists():
+            try:
+                previous = json.loads(status_path.read_text(encoding="utf-8"))
+                last_cycle = datetime.fromisoformat(
+                    previous["cycle_utc"].replace("Z", "+00:00"))
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+                raise ValueError(f"Invalid existing GFS publication status: {exc}") from exc
+            if candidate < last_cycle:
+                raise ValueError(
+                    f"Refusing to replace newer GFS {last_cycle.isoformat()} "
+                    f"with older fallback {candidate.isoformat()}")
         status = {
             "model": "NOAA GFS 0.25 degree",
             "cycle_utc": candidate.isoformat().replace("+00:00", "Z"),
