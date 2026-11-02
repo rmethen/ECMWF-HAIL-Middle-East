@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: "20 6,18 * * *"
     - cron: "50 12 * * *"
+    # Retry once later if new Canadian cycle was still publishing or GH skipped a run.
+    - cron: "25 15 * * *"
 
 permissions:
   contents: write

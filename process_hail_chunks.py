@@ -1,5 +1,6 @@
 """Run the existing ECMWF diagnostics in small forecast-time batches."""
 import gc
+import json
 from pathlib import Path
 import numpy as np
 import process_hail_grib as processor
@@ -12,13 +13,20 @@ BASE_OPEN_SURFACE = processor.open_surface_field
 
 
 def main():
+    status_path = Path("data/hail_download_status.json")
+    status = json.loads(status_path.read_text(encoding="utf-8")) if status_path.exists() else {}
+    steps = status.get("forecast_steps", STEPS)
+    with BASE_OPEN_FIELD("t") as dataset:
+        n_steps = dataset.sizes.get("step", 1)
+    if n_steps != len(steps):
+        raise RuntimeError(f"Downloaded ECMWF steps ({n_steps}) differ from expected ({len(steps)})")
     pieces = []
-    for start in range(0, len(STEPS), CHUNK_SIZE):
-        stop = min(start + CHUNK_SIZE, len(STEPS))
+    for start in range(0, len(steps), CHUNK_SIZE):
+        stop = min(start + CHUNK_SIZE, len(steps))
         processor.open_field = lambda name, a=start, b=stop: BASE_OPEN_FIELD(name).isel(step=slice(a, b))
         processor.open_surface_field = lambda name, a=start, b=stop: BASE_OPEN_SURFACE(name).isel(step=slice(a, b))
         processor.OUTPUT_FILE = Path(f"data/hail_diagnostics_chunk_{start:02d}.npz")
-        print(f"Processing ECMWF forecast steps {STEPS[start]}–{STEPS[stop-1]} h", flush=True)
+        print(f"Processing ECMWF forecast steps {steps[start]}–{steps[stop-1]} h", flush=True)
         processor.main()
         pieces.append(processor.OUTPUT_FILE)
         gc.collect()
@@ -39,7 +47,7 @@ def main():
     np.savez_compressed(FINAL, **combined)
     for path in pieces:
         path.unlink()
-    print(f"Combined {len(STEPS)} forecast steps into {FINAL}", flush=True)
+    print(f"Combined {len(steps)} forecast steps into {FINAL}", flush=True)
 
 
 if __name__ == "__main__":
