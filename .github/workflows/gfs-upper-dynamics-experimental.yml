@@ -43,13 +43,13 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install GRIB decoding and plotting dependencies
-        run: python -m pip install numpy xarray cfgrib eccodes matplotlib
-      - name: Download genuine NOAA GFS +6 h and render diagnostic PNG
-        run: python gfs_upper_dynamics.py --hour 6
+        run: python -m pip install numpy scipy xarray cfgrib eccodes matplotlib cartopy
+      - name: Download genuine NOAA GFS +3,+6,+12 from a common cycle and render maps
+        run: python gfs_upper_dynamics.py --hours 3,6,12
       - name: Save transient experiment output (no commit, no Pages deploy)
         uses: actions/upload-artifact@v4
         with:
-          name: experimental-gfs-upper-dynamics-f006
-          path: output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL.png
+          name: experimental-gfs-upper-dynamics-f003-f006-f012
+          path: output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F*.png
           if-no-files-found: error
           retention-days: 3
