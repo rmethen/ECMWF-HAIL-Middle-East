@@ -37,10 +37,13 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_gfs_upper_dynamics.py' -v
       - name: Generate three same-cycle NOAA GFS maps and validated status
         run: |
-          python gfs_upper_dynamics.py --hours 3,6,12 --status-output output/gfs_upper_dynamics_status.json
+          python gfs_upper_dynamics.py --hours 3,6,12 --status-output output/gfs_upper_dynamics_status.json --ascent-focus
           test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F003.png
           test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F006.png
           test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F012.png
+          test -s output/GFS_ASCENT_CORES_GULF_F003.png
+          test -s output/GFS_ASCENT_CORES_GULF_F006.png
+          test -s output/GFS_ASCENT_CORES_GULF_F012.png
           test -s output/gfs_upper_dynamics_status.json
       - name: Commit only independent GFS product files to the Pages source
         run: |
@@ -49,6 +52,9 @@ jobs:
           git add output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F003.png
           git add output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F006.png
           git add output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F012.png
+          git add output/GFS_ASCENT_CORES_GULF_F003.png
+          git add output/GFS_ASCENT_CORES_GULF_F006.png
+          git add output/GFS_ASCENT_CORES_GULF_F012.png
           git add output/gfs_upper_dynamics_status.json
           if git diff --cached --quiet; then
             echo "No GFS upper-dynamics product changes"; exit 0
