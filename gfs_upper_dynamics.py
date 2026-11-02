@@ -235,7 +235,8 @@ def render(lon, lat, diagnostic, cycle, hour, output=PLOT_PATH):
             else:
                 ax.plot(x, y, marker="o", color="black", markersize=2.2,
                         transform=crs, zorder=5)
-            offset = (4, -10) if name == "Basra" else (4, 4)
+            offset = ((-38, -13) if name == "Kuwait" else
+                      (4, 9) if name == "Basra" else (4, 4))
             ax.annotate(name, xy=(x, y), xytext=offset,
                         textcoords="offset points", fontsize=7, weight="bold",
                         color="black",
