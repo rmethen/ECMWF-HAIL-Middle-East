@@ -348,7 +348,131 @@ def run(cycle=None, hour=6, source=None, output=PLOT_PATH):
     return path
 
 
-def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None):
+def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
+    """Large single-panel Gulf ascent image intended to be readable on a phone.
+
+    Original three-panel diagnostics remain available. All annotations refer
+    to *forecast* pressure-vertical motion, not actual rainfall observations.
+    """
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import TwoSlopeNorm
+    from scipy.ndimage import gaussian_filter
+
+    lon = np.asarray(lon, dtype=float)
+    lat = np.asarray(lat, dtype=float)
+    omega = np.asarray(diagnostic["upward_omega_pa_s"], dtype=float)
+    if omega.shape != (len(lat), len(lon)):
+        raise ValueError("Omega must be on the GFS lat/lon grid")
+
+    # Reduce display noise modestly; dots and location labels use RAW field.
+    sigmas = (0.3 / np.median(np.abs(np.diff(lat))),
+              0.3 / np.median(np.abs(np.diff(lon))))
+    weights = gaussian_filter(np.isfinite(omega).astype(float), sigmas)
+    shaded = gaussian_filter(np.where(np.isfinite(omega), omega, 0.0), sigmas) \
+             / np.maximum(weights, 1e-10)
+    shaded[weights < 0.2] = np.nan
+
+    crs = ccrs.PlateCarree()
+    # Aspect ratio appropriate to Kuwait/Gulf at page width on mobile.
+    fig = plt.figure(figsize=(9, 10.5), facecolor="white")
+    ax = fig.add_axes([0.07, 0.20, 0.81, 0.63], projection=crs)
+    extent = (42, 59, 22, 36)
+    ax.set_extent(extent, crs=crs)
+    cmap = plt.get_cmap("RdBu_r")  # Red = rising (+); blue = sinking (-).
+    image = ax.pcolormesh(
+        lon, lat, shaded, cmap=cmap,
+        norm=TwoSlopeNorm(vmin=-0.65, vcenter=0, vmax=0.65),
+        transform=crs, shading="auto", rasterized=True)
+    # Strong-ascent extent, not a precipitation amount or probability.
+    mesh_lon, mesh_lat = np.meshgrid(lon, lat)
+    if np.nanmax(shaded) >= 0.25:
+        ax.contour(lon, lat, shaded, levels=[0.25],
+                   colors=["#a71930"], linewidths=1.3,
+                   linestyles="dashed", transform=crs)
+    if np.nanmax(shaded) >= 0.50:
+        ax.contour(lon, lat, shaded, levels=[0.50],
+                   colors=["#900016"], linewidths=2.2, transform=crs)
+
+    core_mask = find_ascent_cores(omega)
+    west, east, south, north = extent
+    shown = core_mask & (mesh_lon >= west) & (mesh_lon <= east) & \
+            (mesh_lat >= south) & (mesh_lat <= north)
+    coords = np.argwhere(shown)
+    if len(coords):
+        ax.scatter(
+            mesh_lon[shown], mesh_lat[shown], marker="o",
+            s=88, c="#d90c23", edgecolors="#ffe144", linewidths=1.9,
+            transform=crs, zorder=8)
+        # Label only strongest three values to avoid unreadable clusters.
+        sorted_coords = sorted(coords, key=lambda ij: omega[tuple(ij)], reverse=True)
+        for i, j in sorted_coords[:3]:
+            ax.annotate(f"{omega[i, j]:.2f}",
+                        (lon[j], lat[i]), xytext=(7, 8),
+                        textcoords="offset points", size=10, weight="bold",
+                        color="#8e0018",
+                        bbox={"facecolor": "white", "edgecolor": "none",
+                              "alpha": 0.85, "pad": 1.5}, zorder=9)
+
+    ax.coastlines(resolution="110m", linewidth=1.1, color="#263344", zorder=4)
+    ax.add_feature(cfeature.BORDERS.with_scale("110m"),
+                   linewidth=0.75, edgecolor="#404850", zorder=4)
+    for name, x, y in (
+        ("Basra", 47.78, 30.51), ("KUWAIT", 47.98, 29.38),
+        ("Doha", 51.53, 25.29), ("Dubai", 55.27, 25.20),
+        ("Riyadh", 46.71, 24.71), ("Bushehr", 50.84, 28.92),
+    ):
+        ax.plot(x, y, "k*" if name == "KUWAIT" else "ko",
+                markersize=10 if name == "KUWAIT" else 3.5,
+                transform=crs, zorder=7)
+        dx, dy = ((-52, -18) if name == "KUWAIT" else
+                  (-40, 11) if name == "Basra" else (5, 6))
+        ax.annotate(name, (x, y), xytext=(dx, dy),
+                    textcoords="offset points", size=10,
+                    weight="bold" if name == "KUWAIT" else "normal",
+                    color="#1b2631",
+                    bbox={"facecolor": "white", "edgecolor": "none",
+                          "alpha": 0.78, "pad": 0.8}, zorder=9)
+    ax.set_xticks(np.arange(42, 60, 3), crs=crs)
+    ax.set_yticks(np.arange(22, 37, 2), crs=crs)
+    ax.tick_params(labelsize=10)
+    ax.grid(color="#607283", alpha=.22)
+
+    valid = cycle + timedelta(hours=hour)
+    valid_kwt = valid + timedelta(hours=3)
+    fig.text(.07, .962, "GFS | KUWAIT & NORTH GULF", fontsize=21,
+             weight="bold", color="#172b40")
+    fig.text(.07, .925, "600–400 hPa vertical motion | RED = RISING AIR",
+             fontsize=13, weight="bold", color="#a40c25")
+    fig.text(.07, .895,
+             f"Cycle {cycle:%Y-%m-%d %HZ}    Forecast +{hour}h"
+             f"    Valid Kuwait {valid_kwt:%d %b %H:%M}",
+             fontsize=11, color="#374656")
+
+    cb = fig.colorbar(image, ax=ax, fraction=.052, pad=.022, shrink=.81)
+    cb.ax.tick_params(labelsize=10)
+    cb.set_label("Upward omega (Pa/s)", fontsize=11)
+    fig.text(.075, .155,
+             f"RED/YELLOW dots: {len(coords)} local maxima of ascent >= 0.50 Pa/s.",
+             fontsize=12, weight="bold", color="#a40c25")
+    fig.text(.075, .123,
+             "Red outlines: 0.25 (dashed) / 0.50 (solid) Pa/s ascent.",
+             fontsize=11, color="#3c4b5a")
+    fig.text(.075, .087,
+             "FORECAST DYNAMICS ONLY. Not observed storms, rain or hail.",
+             fontsize=11, weight="bold", color="#36475a")
+
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output, dpi=180, facecolor="white")
+    plt.close(fig)
+    return output
+
+
+def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None, ascent_focus=False):
     """Render multiple leads from ONE complete GFS initialization.
 
     Cycle rollback is all-or-none so the evolution has consistent run time.
@@ -389,6 +513,10 @@ def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None
         destination = out.with_name(f"{out.stem}_F{hour:03d}{out.suffix}")
         result = render(lon, lat, diag, candidate, hour, destination)
         paths.append(result)
+        if ascent_focus:
+            focus_path = out.with_name(f"GFS_ASCENT_CORES_GULF_F{hour:03d}.png")
+            render_ascent_focus(lon, lat, diag, candidate, hour, focus_path)
+            print(f"Rendered mobile ascent focus: {focus_path}", flush=True)
         print(f"Rendered real GFS cycle {candidate:%Y-%m-%d %HZ} +{hour}h: "
               f"{result}", flush=True)
     # Write status only after all three real-data images exist; a failed run
@@ -438,6 +566,7 @@ if __name__ == "__main__":
     parser.add_argument("--source", help="Use existing NOAA GRIB2 file (offline)")
     parser.add_argument("--output", default=str(PLOT_PATH))
     parser.add_argument("--status-output", help="Write JSON cycle metadata after all lead-time images succeed")
+    parser.add_argument("--ascent-focus", action="store_true", help="Also render a large single-panel ascent map for phones")
     opts = parser.parse_args()
     c = (datetime.strptime(opts.cycle, "%Y%m%d%H").replace(tzinfo=timezone.utc)
          if opts.cycle else None)
@@ -445,6 +574,7 @@ if __name__ == "__main__":
         if opts.source:
             parser.error("--source is only supported with --hour (single lead)")
         run_hours(cycle=c, hours=tuple(int(h.strip()) for h in opts.hours.split(",")),
-                  output=opts.output, status_output=opts.status_output)
+                  output=opts.output, status_output=opts.status_output,
+                  ascent_focus=opts.ascent_focus)
     else:
         run(cycle=c, hour=opts.hour, source=opts.source, output=opts.output)
