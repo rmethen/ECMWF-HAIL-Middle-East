@@ -163,43 +163,94 @@ def read_diagnostics(path: Path):
 
 
 def render(lon, lat, diagnostic, cycle, hour, output=PLOT_PATH):
-    """Three independent fields, with coordinate axes and Kuwait locator."""
+    """Geographically grounded three-panel synoptic chart.
+
+    Display-only Gaussian filter (~0.75 degree sigma on 0.25-degree grid)
+    reduces single-cell derivative noise; the scientific outputs remain raw.
+    """
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from scipy.ndimage import gaussian_filter
 
-    descriptions = (
-        ("div250_1e5_s", "250 hPa wind divergence (10⁻⁵ s⁻¹)",
+    fields = (
+        ("div250_1e5_s", "250 hPa full-wind divergence (10⁻⁵ s⁻¹)",
          "RdBu_r", -10, 10),
         ("upward_omega_pa_s", "600–400 hPa mean upward omega (Pa/s; + = ascent)",
          "RdBu", -.8, .8),
         ("abs_vort500_1e5_s", "500 hPa absolute vorticity (10⁻⁵ s⁻¹)",
-         "RdBu_r", -15, 15),
+         "YlOrRd", 0, 30),
     )
-    fig, axes = plt.subplots(1, 3, figsize=(17, 6), constrained_layout=True)
+    crs = ccrs.PlateCarree()
+    fig, axes = plt.subplots(
+        1, 3, figsize=(18.5, 7),
+        subplot_kw={"projection": crs}, constrained_layout=True)
     valid = cycle + timedelta(hours=hour)
-    for ax, (key, label, cmap, vmin, vmax) in zip(axes, descriptions):
-        values = diagnostic[key]
-        mesh = ax.pcolormesh(lon, lat, values, shading="auto", cmap=cmap,
-                             vmin=vmin, vmax=vmax)
-        ax.plot(47.98, 29.38, "k*", ms=10)
-        ax.annotate("Kuwait", (47.98, 29.38), xytext=(4, 4),
-                    textcoords="offset points", fontsize=8, weight="bold")
-        ax.set_xlim(PLOT_BOUNDS[:2])
-        ax.set_ylim(PLOT_BOUNDS[2:])
-        ax.grid(alpha=.25)
+    places = (
+        ("Kuwait", 47.98, 29.38),
+        ("Basra", 47.78, 30.51),
+        ("Riyadh", 46.71, 24.71),
+        ("Doha", 51.53, 25.29),
+        ("Dubai", 55.27, 25.20),
+        ("Muscat", 58.59, 23.61),
+    )
+    # 0.25 degree regular GFS grid; only *plotted* values are smoothed.
+    lon = np.asarray(lon, dtype=float)
+    lat = np.asarray(lat, dtype=float)
+    step_lat = float(np.median(np.abs(np.diff(lat))))
+    step_lon = float(np.median(np.abs(np.diff(lon))))
+    sigma = (0.75 / step_lat, 0.75 / step_lon)
+    for ax, (key, label, cmap, vmin, vmax) in zip(axes, fields):
+        values = np.asarray(diagnostic[key], dtype=float)
+        if values.shape != (len(lat), len(lon)):
+            raise ValueError(f"Invalid diagnostic shape for {key}")
+        if not np.isfinite(values).all():
+            # Normalized Gaussian convolution prevents spreading missing points.
+            weights = gaussian_filter(np.isfinite(values).astype(float), sigma=sigma)
+            smoothed = gaussian_filter(np.nan_to_num(values, nan=0., posinf=0., neginf=0.),
+                                       sigma=sigma) / np.maximum(weights, 1e-10)
+            smoothed[weights < 0.05] = np.nan
+        else:
+            smoothed = gaussian_filter(values, sigma=sigma)
+        mesh = ax.pcolormesh(
+            lon, lat, smoothed, shading="auto", cmap=cmap,
+            vmin=vmin, vmax=vmax, transform=crs, rasterized=True)
+        ax.set_extent(PLOT_BOUNDS, crs=crs)
+        # Public-domain Natural Earth outlines; no arbitrary drawn coastlines.
+        ax.coastlines(resolution="110m", color="#263647", linewidth=0.75, zorder=3)
+        ax.add_feature(cfeature.BORDERS.with_scale("110m"),
+                       edgecolor="#3d4751", linewidth=0.5, zorder=3)
+        ax.set_xticks(np.arange(35, 65, 5), crs=crs)
+        ax.set_yticks(np.arange(16, 39, 4), crs=crs)
+        ax.tick_params(labelsize=8)
+        ax.grid(color="#7b8490", alpha=.25, linewidth=.5)
         ax.set_xlabel("Longitude °E")
         ax.set_ylabel("Latitude °N")
+        for name, x, y in places:
+            if name == "Kuwait":
+                ax.plot(x, y, marker="*", color="black", markersize=8,
+                        transform=crs, zorder=5)
+            else:
+                ax.plot(x, y, marker="o", color="black", markersize=2.2,
+                        transform=crs, zorder=5)
+            offset = (4, -10) if name == "Basra" else (4, 4)
+            ax.annotate(name, xy=(x, y), xytext=offset,
+                        textcoords="offset points", fontsize=7, weight="bold",
+                        color="black",
+                        bbox={"facecolor": "white", "edgecolor": "none",
+                              "alpha": .65, "pad": .6}, zorder=6)
         ax.set_title(label, fontsize=10)
-        fig.colorbar(mesh, ax=ax, shrink=.72, pad=.02)
+        fig.colorbar(mesh, ax=ax, shrink=.77, pad=.025, extend="both")
     fig.suptitle(
         f"EXPERIMENTAL GFS Upper-Air Dynamics | Run {cycle:%Y-%m-%d %HZ} "
         f"| +{hour}h | Valid {valid:%Y-%m-%d %HZ}\n"
-        "Model diagnostics only — not PV, irrotational wind, observed radar or hail probability",
+        "Display smoothed ~0.75° sigma | Independent diagnostics, not PV, irrotational wind or hail probability",
         fontsize=12)
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output, dpi=140)
+    fig.savefig(output, dpi=140, bbox_inches="tight")
     plt.close(fig)
     return output
 
@@ -235,13 +286,67 @@ def run(cycle=None, hour=6, source=None, output=PLOT_PATH):
     return path
 
 
+def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH):
+    """Render multiple leads from ONE complete GFS initialization.
+
+    Cycle rollback is all-or-none so the evolution has consistent run time.
+    """
+    hours = tuple(int(h) for h in hours)
+    if not hours or len(hours) > 5 or len(set(hours)) != len(hours):
+        raise ValueError("Need 1–5 distinct GFS forecast hours")
+    if any(h < 0 or h > 120 for h in hours):
+        raise ValueError("All forecast hours must be 0–120")
+    if cycle is None:
+        now = datetime.now(timezone.utc)
+        anchor = now.replace(hour=now.hour // 6 * 6, minute=0, second=0,
+                             microsecond=0)
+        candidates = [anchor - timedelta(hours=6 * i) for i in range(6)]
+    else:
+        candidates = [cycle]
+
+    last_error = None
+    for candidate in candidates:
+        sequence = []
+        try:
+            for hour in hours:
+                path = Path(f"data/gfs_upper_dynamics_f{hour:03d}.grib2")
+                grib = download(candidate, hour, path=path)
+                lon, lat, diag = read_diagnostics(grib)
+                sequence.append((hour, lon, lat, diag))
+            break
+        except (OSError, ValueError, RuntimeError) as exc:
+            last_error = exc
+            print(f"Reject incomplete GFS cycle {candidate:%Y-%m-%d %HZ}: "
+                  f"{exc}", flush=True)
+    else:
+        raise RuntimeError(f"No complete GFS cycle for {hours}: {last_error}")
+
+    out = Path(output)
+    paths = []
+    for hour, lon, lat, diag in sequence:
+        destination = out.with_name(f"{out.stem}_F{hour:03d}{out.suffix}")
+        result = render(lon, lat, diag, candidate, hour, destination)
+        paths.append(result)
+        print(f"Rendered real GFS cycle {candidate:%Y-%m-%d %HZ} +{hour}h: "
+              f"{result}", flush=True)
+    return paths
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cycle", help="GFS model initialization YYYYMMDDHH in UTC")
     parser.add_argument("--hour", type=int, default=6)
+    parser.add_argument("--hours", help="Comma-separated lead hours, e.g. 3,6,12, one GFS cycle")
     parser.add_argument("--source", help="Use existing NOAA GRIB2 file (offline)")
     parser.add_argument("--output", default=str(PLOT_PATH))
     opts = parser.parse_args()
     c = (datetime.strptime(opts.cycle, "%Y%m%d%H").replace(tzinfo=timezone.utc)
          if opts.cycle else None)
-    run(cycle=c, hour=opts.hour, source=opts.source, output=opts.output)
+    if opts.hours:
+        if opts.source:
+            parser.error("--source is only supported with --hour (single lead)")
+        run_hours(cycle=c, hours=tuple(int(h.strip()) for h in opts.hours.split(",")),
+                  output=opts.output)
+    else:
+        run(cycle=c, hour=opts.hour, source=opts.source, output=opts.output)
