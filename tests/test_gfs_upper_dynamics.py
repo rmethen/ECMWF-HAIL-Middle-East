@@ -9,6 +9,7 @@ import numpy as np
 from gfs_upper_dynamics import (
     EARTH_RADIUS_M, EARTH_ROTATION_RAD_S,
     _vector_derivatives, build_url, calculate_diagnostics, run_hours,
+    find_ascent_cores,
 )
 
 
@@ -101,6 +102,48 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         for hours in ((), (6, 6), (-1,), (121,), tuple(range(6))):
             with self.subTest(hours=hours), self.assertRaises(ValueError):
                 run_hours(cycle=c, hours=hours)
+
+
+    def test_strong_ascent_cores_and_subthreshold_rejection(self):
+        ascent = np.zeros(self.shape)
+        ascent[2, 2] = 0.32
+        ascent[7, 7] = 0.47
+        ascent[4, 9] = 0.23
+        cores = find_ascent_cores(ascent, threshold=0.25, neighborhood=5)
+        self.assertTrue(cores[2, 2])
+        self.assertTrue(cores[7, 7])
+        self.assertFalse(cores[4, 9])
+        self.assertEqual(int(cores.sum()), 2)
+
+    def test_adjacent_weaker_peak_not_selected(self):
+        ascent = np.zeros(self.shape)
+        ascent[5, 5] = 0.50
+        ascent[5, 6] = 0.42
+        cores = find_ascent_cores(ascent)
+        self.assertTrue(cores[5, 5])
+        self.assertFalse(cores[5, 6])
+        self.assertEqual(int(cores.sum()), 1)
+
+    def test_plateau_produces_only_one_dot(self):
+        ascent = np.zeros(self.shape)
+        ascent[4:6, 4:6] = 0.40
+        cores = find_ascent_cores(ascent)
+        self.assertEqual(int(cores.sum()), 1)
+        self.assertTrue(cores[4:6, 4:6].any())
+
+    def test_ascent_cores_handle_nan_and_reject_invalid_inputs(self):
+        ascent = np.zeros(self.shape)
+        ascent[1, 1] = np.nan
+        ascent[7, 7] = 0.36
+        cores = find_ascent_cores(ascent)
+        self.assertTrue(cores[7, 7])
+        self.assertFalse(cores[1, 1])
+        with self.assertRaises(ValueError):
+            find_ascent_cores(np.array([0.3, 0.4]))
+        with self.assertRaises(ValueError):
+            find_ascent_cores(ascent, neighborhood=2)
+        with self.assertRaises(ValueError):
+            find_ascent_cores(ascent, threshold=-0.1)
 
 
 if __name__ == "__main__":
