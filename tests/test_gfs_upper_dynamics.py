@@ -1,5 +1,6 @@
 """Offline numerical and request-contract tests; no NOAA network needed."""
 import unittest
+from unittest.mock import call, patch
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlsplit
 
@@ -7,7 +8,7 @@ import numpy as np
 
 from gfs_upper_dynamics import (
     EARTH_RADIUS_M, EARTH_ROTATION_RAD_S,
-    _vector_derivatives, build_url, calculate_diagnostics,
+    _vector_derivatives, build_url, calculate_diagnostics, run_hours,
 )
 
 
@@ -77,6 +78,28 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         z = self.zero
         with self.assertRaises(ValueError):
             calculate_diagnostics(self.lon, self.lat, z, z, z, z, z, z, z[:, 1:])
+
+
+    def test_multi_hour_series_shares_initialization(self):
+        cycle = datetime(2026, 11, 1, 18, tzinfo=timezone.utc)
+        with patch("gfs_upper_dynamics.download", side_effect=lambda c, h, path: path) as get_data, \
+             patch("gfs_upper_dynamics.read_diagnostics",
+                   return_value=(self.lon, self.lat, {"ok": self.zero})), \
+             patch("gfs_upper_dynamics.render", side_effect=lambda lon, lat, diag, c, h, dest: dest) as draw:
+            paths = run_hours(cycle=cycle, hours=(3, 6, 12))
+        self.assertEqual(len(paths), 3)
+        self.assertEqual(get_data.call_count, 3)
+        self.assertEqual(draw.call_count, 3)
+        self.assertTrue(all(args.args[0] == cycle for args in get_data.call_args_list))
+        self.assertTrue(str(paths[0]).endswith("_F003.png"))
+        self.assertTrue(str(paths[1]).endswith("_F006.png"))
+        self.assertTrue(str(paths[2]).endswith("_F012.png"))
+
+    def test_multi_hour_rejects_duplicate_or_excessive_leads(self):
+        c = datetime(2026, 11, 1, 18, tzinfo=timezone.utc)
+        for hours in ((), (6, 6), (-1,), (121,), tuple(range(6))):
+            with self.subTest(hours=hours), self.assertRaises(ValueError):
+                run_hours(cycle=c, hours=hours)
 
 
 if __name__ == "__main__":
