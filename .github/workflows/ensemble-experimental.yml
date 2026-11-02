@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: '30 6,18 * * *'
     - cron: '45 12 * * *'
+    # Backup opportunity to publish the latest complete 06Z GEFS cycle.
+    - cron: '25 15 * * *'
 
 permissions:
   contents: write
