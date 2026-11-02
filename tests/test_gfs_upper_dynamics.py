@@ -71,7 +71,7 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         np.testing.assert_allclose(fields["upward_omega_pa_s"], .6, atol=1e-13)
         expected = 2 * EARTH_ROTATION_RAD_S * np.sin(
             np.deg2rad(self.lat))[:, None] * 1e5
-        np.testing.assert_allclose(fields["abs_vort500_1e5_s"], expected)
+        np.testing.assert_allclose(fields["abs_vort500_1e5_s"], np.broadcast_to(expected, self.shape))
 
     def test_invalid_shapes_rejected(self):
         z = self.zero
