@@ -1,0 +1,55 @@
+name: Experimental GFS upper-air dynamics
+on:
+  push:
+    branches:
+      - feature/gfs-upper-dynamics-experimental
+    paths:
+      - gfs_upper_dynamics.py
+      - tests/test_gfs_upper_dynamics.py
+      - GFS_UPPER_DYNAMICS_EXPERIMENT.md
+      - .github/workflows/gfs-upper-dynamics-experimental.yml
+  pull_request:
+    paths:
+      - gfs_upper_dynamics.py
+      - tests/test_gfs_upper_dynamics.py
+      - GFS_UPPER_DYNAMICS_EXPERIMENT.md
+      - .github/workflows/gfs-upper-dynamics-experimental.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  offline-science-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install numerical dependencies
+        run: python -m pip install numpy
+      - name: Run synthetic math and request tests (no network)
+        run: python -m unittest discover -s tests -p 'test_gfs_upper_dynamics.py' -v
+
+  real-gfs-f006-smoke:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: offline-science-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install GRIB decoding and plotting dependencies
+        run: python -m pip install numpy xarray cfgrib eccodes matplotlib
+      - name: Download genuine NOAA GFS +6 h and render diagnostic PNG
+        run: python gfs_upper_dynamics.py --hour 6
+      - name: Save transient experiment output (no commit, no Pages deploy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: experimental-gfs-upper-dynamics-f006
+          path: output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL.png
+          if-no-files-found: error
+          retention-days: 3
