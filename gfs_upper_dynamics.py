@@ -163,6 +163,42 @@ def read_diagnostics(path: Path):
     return lon, lat, diag
 
 
+ASCENT_CORE_THRESHOLD_PA_S = 0.25
+ASCENT_CORE_NEIGHBORHOOD = 5
+
+
+def find_ascent_cores(upward_omega, threshold=ASCENT_CORE_THRESHOLD_PA_S,
+                      neighborhood=ASCENT_CORE_NEIGHBORHOOD):
+    """Unique local maxima of *raw* upward omega, displayed as ascent dots.
+
+    Positive values represent ascent because GFS pressure velocity is negated.
+    A connected flat maximum (plateau) gives exactly one representative dot.
+    These are *model-derived ascent peaks*, not observed precipitation or hail.
+    """
+    from scipy.ndimage import label, maximum_filter
+
+    field = np.asarray(upward_omega, dtype=float)
+    if field.ndim != 2:
+        raise ValueError("upward_omega must be 2-D")
+    if not np.isfinite(threshold) or threshold <= 0:
+        raise ValueError("threshold must be positive and finite (Pa/s)")
+    if not isinstance(neighborhood, int) or neighborhood < 3 or neighborhood % 2 == 0:
+        raise ValueError("neighborhood must be odd and >= 3")
+    finite = np.isfinite(field)
+    work = np.where(finite, field, -np.inf)
+    local_max = maximum_filter(work, size=neighborhood, mode="nearest")
+    candidates = finite & (work >= threshold) & (work == local_max)
+    components, count = label(candidates, structure=np.ones((3, 3), dtype=int))
+    cores = np.zeros(field.shape, dtype=bool)
+    for region in range(1, count + 1):
+        points = np.argwhere(components == region)
+        centroid = points.mean(axis=0)
+        i = np.argmin(((points - centroid) ** 2).sum(axis=1))
+        row, col = points[i]
+        cores[row, col] = True
+    return cores
+
+
 def render(lon, lat, diagnostic, cycle, hour, output=PLOT_PATH):
     """Geographically grounded three-panel synoptic chart.
 
@@ -218,6 +254,29 @@ def render(lon, lat, diagnostic, cycle, hour, output=PLOT_PATH):
         mesh = ax.pcolormesh(
             lon, lat, smoothed, shading="auto", cmap=cmap,
             vmin=vmin, vmax=vmax, transform=crs, rasterized=True)
+        # Dots use unsmoothed source-grid peaks, so localized forcing is not
+        # lost to the 0.75-degree smoothing applied to background shading.
+        if key == "upward_omega_pa_s":
+            core_mask = find_ascent_cores(values)
+            lon2d, lat2d = np.meshgrid(lon, lat)
+            west, east, south, north = PLOT_BOUNDS
+            visible = (core_mask & (lon2d >= west) & (lon2d <= east) &
+                       (lat2d >= south) & (lat2d <= north))
+            if np.any(visible):
+                ax.scatter(
+                    lon2d[visible], lat2d[visible],
+                    s=22, c="#df0027", marker="o",
+                    edgecolors="white", linewidths=0.55,
+                    transform=crs, zorder=4,
+                )
+            ax.text(
+                0.02, 0.025,
+                f"Red dots: raw ascent cores ≥ {ASCENT_CORE_THRESHOLD_PA_S:.2f} Pa/s "
+                f"({np.count_nonzero(visible)})",
+                transform=ax.transAxes, fontsize=7, zorder=7,
+                bbox={"facecolor": "white", "edgecolor": "none",
+                      "alpha": 0.86, "pad": 2.5},
+            )
         ax.set_extent(PLOT_BOUNDS, crs=crs)
         # Public-domain Natural Earth outlines; no arbitrary drawn coastlines.
         ax.coastlines(resolution="110m", color="#263647", linewidth=0.75, zorder=3)
