@@ -19,7 +19,7 @@ The grid is approximately 0.25 degrees, *not* 0.25 km. The fields are forecasts,
 Offline numerical tests (no NOAA request):
 
 ```bash
-python -m pip install numpy
+python -m pip install numpy scipy
 python -m unittest discover -s tests -p 'test_gfs_upper_dynamics.py' -v
 ```
 
@@ -49,6 +49,8 @@ Expected multi-lead outputs: `output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL
 - Natural Earth 110m **real coastlines and international borders** are rendered via Cartopy; first use may need network access to download public-domain geographic shapes.
 - Kuwait, Basra, Doha, Dubai, Riyadh, and Muscat are labeled for geographic context; city point locations are reference markers, not storm observations.
 - Display-only Gaussian smoothing of approximately **0.75° standard deviation** reduces pixel-scale derivative noise. Calculated diagnostics and physical units remain unchanged. Small, localized maxima can be attenuated, so the display is suitable for synoptic/mid-scale context rather than exact cell-scale storm analysis.
+- **Experimental red dots** on the 600–400 hPa omega panel identify *local maxima of unsmoothed* mean upward omega (positive = ascent), subject to a **0.25 Pa/s** threshold and a **5×5 GFS-gridpoint** maximum filter (roughly 1.25° across at nominal 0.25° spacing). Flat maxima collapse to one dot. Dot count is limited to the map extent. This threshold is a visualization starting point, not validated as a heavy-rain discriminator, and the locations can differ from maxima of the smoothed background shading.
+- The Albany legend's red-ascent units `5 × 10⁻³ hPa/s` correspond to `0.5 Pa/s`; the new **0.25 Pa/s** dot threshold is therefore **not** an exact replication of Albany's red contours. Neither the dots nor the model omega field confirms heavy precipitation without moisture, instability, dynamics and observation checks.
 - The **relative-vorticity** panel and the divergence panel use diverging zero-centered −10 to +10 × 10⁻⁵ s⁻¹ scales. Positive relative vorticity (in the Northern Hemisphere) can identify cyclonic shortwaves but does not itself prove severe convection. The omega panel is also zero-centered; a positive *upward omega* value means negative original pressure vertical velocity (physical ascent).
 - Three lead-time maps are same-cycle and show forecast evolution, **not radar or 1–3-hour observed nowcasting**.
 
