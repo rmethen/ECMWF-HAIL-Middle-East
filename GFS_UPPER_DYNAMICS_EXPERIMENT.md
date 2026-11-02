@@ -8,11 +8,11 @@ File: `gfs_upper_dynamics.py`. It produces three-panel experimental forecast ima
 
 - 250-hPa **full-wind horizontal divergence**, derived from GFS U and V on a spherical latitude/longitude grid (10⁻⁵ s⁻¹).
 - Mean 600/500/400-hPa **upward omega**, displayed positive for ascent (Pa/s). This is the negative of the equally weighted mean of three pressure-level omega fields, not an integrated vertical velocity.
-- 500-hPa **absolute vorticity**, derived from 500-hPa winds including the Coriolis parameter (10⁻⁵ s⁻¹).
+- 500-hPa **relative vorticity** (10⁻⁵ s⁻¹), derived from 500-hPa GFS winds; this corresponds to the type of field used in the Bentley 500-hPa Relative Vorticity panel. The scientific calculation also retains **absolute vorticity** including the Coriolis parameter for future diagnostics, but does not plot it.
 
 The grid is approximately 0.25 degrees, *not* 0.25 km. The fields are forecasts, not radar observations or verified hail detections. They may help diagnose forcing but cannot alone establish CIN erosion or convective initiation.
 
-**Important scientific boundary:** Upper-level full-wind divergence is **not** the irrotational-wind vector product displayed by Bentley. Neither full-wind divergence nor 500-hPa absolute vorticity is equivalent to an Ertel-PV 300–200-hPa product. Genuine PV and irrotational wind require additional ingredients and validation and have deliberately **not** been labeled as implemented here.
+**Important scientific boundary:** Upper-level full-wind divergence is **not** the irrotational-wind vector product displayed by Bentley. Neither full-wind divergence nor 500-hPa relative/absolute vorticity is equivalent to an Ertel-PV 300–200-hPa product. Genuine PV and irrotational wind require additional ingredients and validation and have deliberately **not** been labeled as implemented here.
 
 ## Run and verification
 
@@ -49,7 +49,7 @@ Expected multi-lead outputs: `output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL
 - Natural Earth 110m **real coastlines and international borders** are rendered via Cartopy; first use may need network access to download public-domain geographic shapes.
 - Kuwait, Basra, Doha, Dubai, Riyadh, and Muscat are labeled for geographic context; city point locations are reference markers, not storm observations.
 - Display-only Gaussian smoothing of approximately **0.75° standard deviation** reduces pixel-scale derivative noise. Calculated diagnostics and physical units remain unchanged. Small, localized maxima can be attenuated, so the display is suitable for synoptic/mid-scale context rather than exact cell-scale storm analysis.
-- The vorticity panel uses a sequential 0–30 × 10⁻⁵ s⁻¹ color scale: stronger absolute vorticity does not itself prove severe convection. Divergence and omega remain zero-centered. A positive *upward omega* value means negative original pressure vertical velocity (physical ascent).
+- The **relative-vorticity** panel and the divergence panel use diverging zero-centered −10 to +10 × 10⁻⁵ s⁻¹ scales. Positive relative vorticity (in the Northern Hemisphere) can identify cyclonic shortwaves but does not itself prove severe convection. The omega panel is also zero-centered; a positive *upward omega* value means negative original pressure vertical velocity (physical ascent).
 - Three lead-time maps are same-cycle and show forecast evolution, **not radar or 1–3-hour observed nowcasting**.
 
 ## Safety gate and next steps
