@@ -1,0 +1,83 @@
+"""Offline numerical and request-contract tests; no NOAA network needed."""
+import unittest
+from datetime import datetime, timezone
+from urllib.parse import parse_qs, urlsplit
+
+import numpy as np
+
+from gfs_upper_dynamics import (
+    EARTH_RADIUS_M, EARTH_ROTATION_RAD_S,
+    _vector_derivatives, build_url, calculate_diagnostics,
+)
+
+
+class GFSUpperDynamicsTests(unittest.TestCase):
+    def setUp(self):
+        self.lon = np.arange(43., 53. + 0.001, 1.)
+        self.lat = np.arange(25., 35. + 0.001, 1.)
+        self.shape = (len(self.lat), len(self.lon))
+        self.zero = np.zeros(self.shape)
+
+    def test_url_has_real_noaa_pressure_levels_and_bounded_region(self):
+        c = datetime(2026, 11, 1, 18, tzinfo=timezone.utc)
+        parsed = urlsplit(build_url(c, 6))
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        self.assertEqual(parsed.hostname, "nomads.ncep.noaa.gov")
+        self.assertEqual(params["file"], ["gfs.t18z.pgrb2.0p25.f006"])
+        self.assertEqual(params["dir"], ["/gfs.20261101/18/atmos"])
+        for variable in ("UGRD", "VGRD", "VVEL"):
+            self.assertEqual(params[f"var_{variable}"], ["on"])
+        for lev in (250, 400, 500, 600):
+            self.assertEqual(params[f"lev_{lev}_mb"], ["on"])
+        self.assertEqual(params["leftlon"], ["30"])
+        self.assertEqual(params["rightlon"], ["68"])
+
+    def test_invalid_cycle(self):
+        from datetime import timedelta
+        with self.assertRaises(ValueError):
+            build_url(datetime(2026, 11, 1, 19, tzinfo=timezone.utc))
+        with self.assertRaises(ValueError):
+            build_url(datetime(2026, 11, 1, 18))
+        with self.assertRaises(ValueError):
+            build_url(datetime(2026, 11, 1, 18, tzinfo=timezone(timedelta(hours=3))))
+
+    def test_zero_wind_has_zero_divergence_and_relative_vorticity(self):
+        div, vort = _vector_derivatives(self.lon, self.lat, self.zero, self.zero)
+        np.testing.assert_allclose(div, 0., atol=1e-14)
+        np.testing.assert_allclose(vort, 0., atol=1e-14)
+
+    def test_linear_zonal_wind_gives_expected_divergence(self):
+        strength = 2e-5  # s^-1
+        u = EARTH_RADIUS_M * np.cos(np.deg2rad(self.lat))[:, None] * (
+            np.deg2rad(self.lon) - np.deg2rad(48.)) * strength
+        u = np.broadcast_to(u, self.shape)
+        div, _ = _vector_derivatives(self.lon, self.lat, u, self.zero)
+        np.testing.assert_allclose(div[:, 1:-1], strength, rtol=1e-11, atol=1e-12)
+
+    def test_descending_latitudes_are_supported(self):
+        z = np.zeros(self.shape)
+        up = calculate_diagnostics(
+            self.lon, self.lat, z, z, z, z, z-.3, z-.6, z-.9)
+        down = calculate_diagnostics(
+            self.lon, self.lat[::-1], z[::-1], z[::-1],
+            z[::-1], z[::-1], (z-.3)[::-1], (z-.6)[::-1], (z-.9)[::-1])
+        for k in up:
+            np.testing.assert_allclose(up[k], down[k][::-1], atol=1e-11)
+
+    def test_ascent_sign_and_planetary_vorticity(self):
+        z = self.zero
+        fields = calculate_diagnostics(
+            self.lon, self.lat, z, z, z, z, z-.3, z-.6, z-.9)
+        np.testing.assert_allclose(fields["upward_omega_pa_s"], .6, atol=1e-13)
+        expected = 2 * EARTH_ROTATION_RAD_S * np.sin(
+            np.deg2rad(self.lat))[:, None] * 1e5
+        np.testing.assert_allclose(fields["abs_vort500_1e5_s"], expected)
+
+    def test_invalid_shapes_rejected(self):
+        z = self.zero
+        with self.assertRaises(ValueError):
+            calculate_diagnostics(self.lon, self.lat, z, z, z, z, z, z, z[:, 1:])
+
+
+if __name__ == "__main__":
+    unittest.main()
