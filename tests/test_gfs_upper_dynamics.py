@@ -34,6 +34,22 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         self.assertEqual(params["leftlon"], ["30"])
         self.assertEqual(params["rightlon"], ["68"])
 
+    def test_mobile_focus_creates_three_extra_map_images(self):
+        cycle = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+        with patch("gfs_upper_dynamics.download",
+                   side_effect=lambda c, h, path: path), \
+             patch("gfs_upper_dynamics.read_diagnostics",
+                   return_value=(self.lon, self.lat, {"upward_omega_pa_s": self.zero})), \
+             patch("gfs_upper_dynamics.render",
+                   side_effect=lambda lon, lat, diag, c, h, dest: dest), \
+             patch("gfs_upper_dynamics.render_ascent_focus",
+                   side_effect=lambda lon, lat, diag, c, h, dest: dest) as mobile:
+            run_hours(cycle=cycle, hours=(3, 6, 12), ascent_focus=True)
+        self.assertEqual(mobile.call_count, 3)
+        outputs = [str(c.args[-1]) for c in mobile.call_args_list]
+        self.assertEqual([p.split("GFS_ASCENT_CORES_GULF_F")[1]
+                          for p in outputs], ["003.png", "006.png", "012.png"])
+
     def test_public_site_has_gfs_card_and_cycle_metadata(self):
         from pathlib import Path
         html = Path("index.html").read_text(encoding="utf-8")
@@ -45,6 +61,11 @@ class GFSUpperDynamicsTests(unittest.TestCase):
             self.assertIn(f'data-gfs-lead="{lead}"', html)
             self.assertIn(f"EXPERIMENTAL_F{lead}.png", html if lead == "006" else workflow)
         self.assertIn("gfs_upper_dynamics_status.json", html)
+        for lead in ("003", "006", "012"):
+            self.assertIn(f"GFS_ASCENT_CORES_GULF_F{lead}.png", workflow)
+        self.assertIn("GFS_ASCENT_CORES_GULF_F006.png", html)
+        self.assertIn("gfs-upper-detail", html)
+        self.assertIn("--ascent-focus", workflow)
         self.assertIn("gfs_upper_dynamics_status.json", workflow)
         self.assertIn("python gfs_upper_dynamics.py --hours 3,6,12", workflow)
 
