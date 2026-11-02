@@ -130,6 +130,24 @@ class GFSUpperDynamicsTests(unittest.TestCase):
             self.assertEqual(metadata["valid_utc"]["6"], "2026-11-02T18:00:00Z")
             self.assertEqual(metadata["ascent_core_threshold_pa_s"], 0.5)
 
+    def test_older_fallback_cannot_replace_newer_published_cycle(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        cycle = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as folder:
+            status = Path(folder) / "status.json"
+            latest = {"cycle_utc": "2026-11-02T18:00:00Z"}
+            status.write_text(json.dumps(latest), encoding="utf-8")
+            with patch("gfs_upper_dynamics.download", side_effect=lambda c, h, path: path), \
+                 patch("gfs_upper_dynamics.read_diagnostics",
+                       return_value=(self.lon, self.lat, {"ok": self.zero})), \
+                 patch("gfs_upper_dynamics.render",
+                       side_effect=lambda lon, lat, diag, c, h, dest: dest):
+                with self.assertRaises(ValueError):
+                    run_hours(cycle=cycle, hours=(3, 6, 12), status_output=status)
+            self.assertEqual(json.loads(status.read_text(encoding="utf-8")), latest)
+
     def test_failed_download_does_not_replace_existing_status(self):
         import tempfile
         from pathlib import Path
