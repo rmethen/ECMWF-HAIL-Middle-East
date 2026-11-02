@@ -1,0 +1,18 @@
+{
+  "model": "NOAA GFS 0.25 degree",
+  "cycle_utc": "2026-11-02T12:00:00Z",
+  "generated_utc": "2026-11-02T18:53:17.754432Z",
+  "forecast_hours": [
+    3,
+    6,
+    12
+  ],
+  "valid_utc": {
+    "3": "2026-11-02T15:00:00Z",
+    "6": "2026-11-02T18:00:00Z",
+    "12": "2026-11-03T00:00:00Z"
+  },
+  "ascent_core_threshold_pa_s": 0.5,
+  "ascent_local_max_window_grid_points": 9,
+  "product": "Experimental upper-air ascent cores (not observed rain)"
+}
