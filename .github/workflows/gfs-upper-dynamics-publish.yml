@@ -1,0 +1,58 @@
+name: Publish GFS Upper Dynamics and Red Ascent Cores
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gfs_upper_dynamics.py'
+      - 'tests/test_gfs_upper_dynamics.py'
+      - 'index.html'
+      - '.github/workflows/gfs-upper-dynamics-publish.yml'
+  schedule:
+    # 4 runs per UTC day, after 00/06/12/18 GFS cycles have time to publish.
+    - cron: '38 4,10,16,22 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: gfs-upper-dynamics-publish
+  cancel-in-progress: false
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install numerical, GRIB and map dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy scipy xarray cfgrib eccodes matplotlib cartopy
+      - name: Numerical validation and red-peak tests
+        run: python -m unittest discover -s tests -p 'test_gfs_upper_dynamics.py' -v
+      - name: Generate three same-cycle NOAA GFS maps and validated status
+        run: |
+          python gfs_upper_dynamics.py --hours 3,6,12 --status-output output/gfs_upper_dynamics_status.json
+          test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F003.png
+          test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F006.png
+          test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F012.png
+          test -s output/gfs_upper_dynamics_status.json
+      - name: Commit only independent GFS product files to the Pages source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F003.png
+          git add output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F006.png
+          git add output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F012.png
+          git add output/gfs_upper_dynamics_status.json
+          if git diff --cached --quiet; then
+            echo "No GFS upper-dynamics product changes"; exit 0
+          fi
+          git commit -m "Publish GFS upper dynamics red ascent core maps"
+          git pull --rebase origin main
+          git push origin HEAD:main
