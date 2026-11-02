@@ -34,6 +34,20 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         self.assertEqual(params["leftlon"], ["30"])
         self.assertEqual(params["rightlon"], ["68"])
 
+    def test_public_site_has_gfs_card_and_cycle_metadata(self):
+        from pathlib import Path
+        html = Path("index.html").read_text(encoding="utf-8")
+        workflow = Path(".github/workflows/gfs-upper-dynamics-publish.yml").read_text(
+            encoding="utf-8")
+        self.assertIn('id="gfs-upper-dynamics"', html)
+        self.assertIn('id="gfs-upper-img"', html)
+        for lead in ("003", "006", "012"):
+            self.assertIn(f'data-gfs-lead="{lead}"', html)
+            self.assertIn(f"EXPERIMENTAL_F{lead}.png", html if lead == "006" else workflow)
+        self.assertIn("gfs_upper_dynamics_status.json", html)
+        self.assertIn("gfs_upper_dynamics_status.json", workflow)
+        self.assertIn("python gfs_upper_dynamics.py --hours 3,6,12", workflow)
+
     def test_invalid_cycle(self):
         from datetime import timedelta
         with self.assertRaises(ValueError):
