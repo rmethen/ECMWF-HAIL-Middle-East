@@ -54,6 +54,12 @@ Expected multi-lead outputs: `output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL
 - The **relative-vorticity** panel and the divergence panel use diverging zero-centered −10 to +10 × 10⁻⁵ s⁻¹ scales. Positive relative vorticity (in the Northern Hemisphere) can identify cyclonic shortwaves but does not itself prove severe convection. The omega panel is also zero-centered; a positive *upward omega* value means negative original pressure vertical velocity (physical ascent).
 - Three lead-time maps are same-cycle and show forecast evolution, **not radar or 1–3-hour observed nowcasting**.
 
+## Mobile-view color and 250-hPa wind arrows
+
+The enlarged Gulf-only map now uses display normalization **−0.40 to +0.40 Pa/s** so ascent (red) and descent (blue) are easier to see on a phone. Values beyond the endpoints saturate in color **without changing the underlying GFS fields, core positions or 0.50 Pa/s threshold**; numeric labels remain unsaturated.
+
+The arrow overlay is a sparse ~2.5-degree sample of the authentic NOAA GFS **250-hPa full horizontal wind vectors** (`u250_ms`, `v250_ms`) already contained in the downloaded GRIB. The direction and speed are measured in m/s; the key displays 20 m/s. These are **not** irrotational (divergent-component) vectors, and they should not be interpreted as direct proof of upper-level divergence or vertical ascent. The 250-hPa full-wind divergence calculated separately remains on the original three-panel diagnostic graphic. The mobile view always distinguishes this limitation in the label.
+
 ## Safety gate and next steps
 
 The experimental workflow runs offline tests on the feature branch and attempts a NOAA same-cycle +3/+6/+12 h smoke test, uploading only a short-lived GitHub Actions image artifact. It has **read-only contents permissions**, never commits generated data, never modifies `main`, and never overwrites existing ECMWF hail, SHIP, Kelvin, or flood products.
