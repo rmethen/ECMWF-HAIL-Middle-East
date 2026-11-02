@@ -163,8 +163,8 @@ def read_diagnostics(path: Path):
     return lon, lat, diag
 
 
-ASCENT_CORE_THRESHOLD_PA_S = 0.25
-ASCENT_CORE_NEIGHBORHOOD = 5
+ASCENT_CORE_THRESHOLD_PA_S = 0.50
+ASCENT_CORE_NEIGHBORHOOD = 9
 
 
 def find_ascent_cores(upward_omega, threshold=ASCENT_CORE_THRESHOLD_PA_S,
