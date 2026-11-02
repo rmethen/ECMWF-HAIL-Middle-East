@@ -22,13 +22,13 @@ ENS_NUMBERS = list(range(1, 51))
 def download_fields():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
-    anchor = now.replace(hour=(now.hour // 12) * 12, minute=0, second=0, microsecond=0)
-    for offset in (0, 12):
+    # IFS ENS open data includes the intermediate 06/18 UTC cycles, not only 00/12.
+    # Probe newest available complete +72h member fields; keep the previous
+    # cycle as a fallback if the newer cycle has not finished dissemination.
+    anchor = now.replace(hour=(now.hour // 6) * 6, minute=0, second=0, microsecond=0)
+    for offset in (0, 6, 12, 18):
         cycle = anchor - timedelta(hours=offset)
-        # Probe the actual mirrors once a cycle is six hours old; a hard
-        # eight-hour gate skips already complete fields during manual updates.
-        # The decoded initialization time is still checked before publication.
-        if now - cycle < timedelta(hours=6) or now - cycle > timedelta(hours=15):
+        if now - cycle < timedelta(hours=6) or now - cycle > timedelta(hours=18):
             continue
         for source in ("azure", "ecmwf"):
             try:
@@ -79,7 +79,7 @@ def main():
     if np.isnat(init_time):
         raise RuntimeError("ECMWF ENS data has no forecast initialization time")
     init_utc = datetime.fromisoformat(np.datetime_as_string(init_time, unit="s")).replace(tzinfo=timezone.utc)
-    if datetime.now(timezone.utc) - init_utc > timedelta(hours=15):
+    if datetime.now(timezone.utc) - init_utc > timedelta(hours=18):
         raise RuntimeError(f"ECMWF ENS cycle {init_utc.isoformat()} is stale; refusing to publish an old map")
     members = np.asarray([f"pf{i:02d}" for i in ENS_NUMBERS])
     OUTPUT_FILE.parent.mkdir(exist_ok=True)
