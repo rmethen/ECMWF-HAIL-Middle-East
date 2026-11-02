@@ -9,6 +9,7 @@ This is NOT the Bentley irrotational-wind or Ertel-PV product, and NOT radar.
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlencode
@@ -347,7 +348,7 @@ def run(cycle=None, hour=6, source=None, output=PLOT_PATH):
     return path
 
 
-def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH):
+def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None):
     """Render multiple leads from ONE complete GFS initialization.
 
     Cycle rollback is all-or-none so the evolution has consistent run time.
@@ -390,6 +391,29 @@ def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH):
         paths.append(result)
         print(f"Rendered real GFS cycle {candidate:%Y-%m-%d %HZ} +{hour}h: "
               f"{result}", flush=True)
+    # Write status only after all three real-data images exist; a failed run
+    # must leave the previously published cycle and image timestamps intact.
+    if status_output is not None:
+        status_path = Path(status_output)
+        status_path.parent.mkdir(parents=True, exist_ok=True)
+        status = {
+            "model": "NOAA GFS 0.25 degree",
+            "cycle_utc": candidate.isoformat().replace("+00:00", "Z"),
+            "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "forecast_hours": list(hours),
+            "valid_utc": {str(h): (candidate + timedelta(hours=h)).isoformat().replace("+00:00", "Z")
+                          for h in hours},
+            "ascent_core_threshold_pa_s": ASCENT_CORE_THRESHOLD_PA_S,
+            "ascent_local_max_window_grid_points": ASCENT_CORE_NEIGHBORHOOD,
+            "product": "Experimental upper-air ascent cores (not observed rain)",
+        }
+        temporary = status_path.with_suffix(".tmp")
+        try:
+            temporary.write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n",
+                                 encoding="utf-8")
+            temporary.replace(status_path)
+        finally:
+            temporary.unlink(missing_ok=True)
     return paths
 
 
@@ -401,6 +425,7 @@ if __name__ == "__main__":
     parser.add_argument("--hours", help="Comma-separated lead hours, e.g. 3,6,12, one GFS cycle")
     parser.add_argument("--source", help="Use existing NOAA GRIB2 file (offline)")
     parser.add_argument("--output", default=str(PLOT_PATH))
+    parser.add_argument("--status-output", help="Write JSON cycle metadata after all lead-time images succeed")
     opts = parser.parse_args()
     c = (datetime.strptime(opts.cycle, "%Y%m%d%H").replace(tzinfo=timezone.utc)
          if opts.cycle else None)
@@ -408,6 +433,6 @@ if __name__ == "__main__":
         if opts.source:
             parser.error("--source is only supported with --hour (single lead)")
         run_hours(cycle=c, hours=tuple(int(h.strip()) for h in opts.hours.split(",")),
-                  output=opts.output)
+                  output=opts.output, status_output=opts.status_output)
     else:
         run(cycle=c, hour=opts.hour, source=opts.source, output=opts.output)
