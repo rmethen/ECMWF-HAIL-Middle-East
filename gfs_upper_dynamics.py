@@ -161,6 +161,10 @@ def read_diagnostics(path: Path):
         lon, lat, get(u, 250), get(v, 250), get(u, 500), get(v, 500),
         get(w, 400), get(w, 500), get(w, 600)
     )
+    # Full upper-level winds for directional arrows (NOT the irrotational
+    # divergent wind component shown in Albany's original product).
+    diag["u250_ms"] = np.asarray(get(u, 250), dtype=float)
+    diag["v250_ms"] = np.asarray(get(v, 250), dtype=float)
     return lon, lat, diag
 
 
@@ -348,6 +352,32 @@ def run(cycle=None, hour=6, source=None, output=PLOT_PATH):
     return path
 
 
+def sample_upper_wind_arrows(lon, lat, u, v, bounds=(42, 59, 22, 36),
+                             spacing_deg=2.5):
+    """Sparse forecast upper-wind vectors for legible regional plotting.
+
+    Spatial subsampling does NOT calculate an irrotational/Helmholtz wind.
+    Returns (longitudes, latitudes, zonal_m_s, meridional_m_s) 1-D arrays.
+    """
+    lon, lat = np.asarray(lon, float), np.asarray(lat, float)
+    u, v = np.asarray(u, float), np.asarray(v, float)
+    if u.shape != (len(lat), len(lon)) or v.shape != u.shape:
+        raise ValueError("Upper wind arrays must match (latitude, longitude)")
+    if len(lon) < 3 or len(lat) < 3 or spacing_deg <= 0:
+        raise ValueError("Invalid upper-wind arrow grid")
+    left, right, bottom, top = bounds
+    xi = np.flatnonzero((lon >= left + 0.5) & (lon <= right - 0.5))
+    yi = np.flatnonzero((lat >= bottom + 0.5) & (lat <= top - 0.5))
+    if not len(xi) or not len(yi):
+        return tuple(np.array([]) for _ in range(4))
+    sx = max(1, int(np.ceil(spacing_deg / np.median(np.abs(np.diff(lon))))))
+    sy = max(1, int(np.ceil(spacing_deg / np.median(np.abs(np.diff(lat))))))
+    xx, yy = np.meshgrid(xi[::sx], yi[::sy])
+    lo, la, uu, vv = lon[xx], lat[yy], u[yy, xx], v[yy, xx]
+    good = np.isfinite(uu) & np.isfinite(vv)
+    return lo[good], la[good], uu[good], vv[good]
+
+
 def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
     """Large single-panel Gulf ascent image intended to be readable on a phone.
 
@@ -367,6 +397,10 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
     omega = np.asarray(diagnostic["upward_omega_pa_s"], dtype=float)
     if omega.shape != (len(lat), len(lon)):
         raise ValueError("Omega must be on the GFS lat/lon grid")
+    if "u250_ms" not in diagnostic or "v250_ms" not in diagnostic:
+        raise ValueError("Full GFS 250-hPa u/v wind fields required for arrows")
+    arrow_lon, arrow_lat, arrow_u, arrow_v = sample_upper_wind_arrows(
+        lon, lat, diagnostic["u250_ms"], diagnostic["v250_ms"])
 
     # Reduce display noise modestly; dots and location labels use RAW field.
     sigmas = (0.3 / np.median(np.abs(np.diff(lat))),
@@ -382,10 +416,12 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
     ax = fig.add_axes([0.07, 0.20, 0.81, 0.63], projection=crs)
     extent = (42, 59, 22, 36)
     ax.set_extent(extent, crs=crs)
-    cmap = plt.get_cmap("RdBu_r")  # Red = rising (+); blue = sinking (-).
+    # High-contrast display only: saturation does not alter omega values,
+    # red-core threshold, or true computed forecast probabilities.
+    cmap = plt.get_cmap("RdBu_r")
     image = ax.pcolormesh(
         lon, lat, shaded, cmap=cmap,
-        norm=TwoSlopeNorm(vmin=-0.65, vcenter=0, vmax=0.65),
+        norm=TwoSlopeNorm(vmin=-0.40, vcenter=0, vmax=0.40),
         transform=crs, shading="auto", rasterized=True)
     # Strong-ascent extent, not a precipitation amount or probability.
     mesh_lon, mesh_lat = np.meshgrid(lon, lat)
@@ -417,6 +453,21 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
                         bbox={"facecolor": "white", "edgecolor": "none",
                               "alpha": 0.85, "pad": 1.5}, zorder=9)
 
+    # Sparse full horizontal 250-hPa winds. NOT divergence-only or
+    # irrotational-wind vectors; these show actual model wind direction.
+    if len(arrow_lon):
+        arrows = ax.quiver(
+            arrow_lon, arrow_lat, arrow_u, arrow_v, transform=crs,
+            color="#192d47", pivot="middle", scale=650,
+            width=0.0038, headwidth=4.2, headlength=5.6,
+            headaxislength=4.9, alpha=0.88, zorder=6,
+        )
+        ax.quiverkey(
+            arrows, X=0.77, Y=1.105, U=20, coordinates="axes",
+            label="250 hPa full wind: 20 m/s", labelpos="S",
+            fontproperties={"size":9},
+        )
+
     ax.coastlines(resolution="110m", linewidth=1.1, color="#263344", zorder=4)
     ax.add_feature(cfeature.BORDERS.with_scale("110m"),
                    linewidth=0.75, edgecolor="#404850", zorder=4)
@@ -445,7 +496,7 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
     valid_kwt = valid + timedelta(hours=3)
     fig.text(.07, .962, "GFS | KUWAIT & NORTH GULF", fontsize=21,
              weight="bold", color="#172b40")
-    fig.text(.07, .925, "600–400 hPa vertical motion | RED = RISING AIR",
+    fig.text(.07, .925, "600–400 hPa ascent | STRONGER RED = RISING AIR",
              fontsize=13, weight="bold", color="#a40c25")
     fig.text(.07, .895,
              f"Cycle {cycle:%Y-%m-%d %HZ}    Forecast +{hour}h"
@@ -462,8 +513,11 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
              "Red outlines: 0.25 (dashed) / 0.50 (solid) Pa/s ascent.",
              fontsize=11, color="#3c4b5a")
     fig.text(.075, .087,
-             "FORECAST DYNAMICS ONLY. Not observed storms, rain or hail.",
-             fontsize=11, weight="bold", color="#36475a")
+             "250 hPa arrows = FULL wind, not divergent-only wind. Model forecast, not rainfall.",
+             fontsize=10, weight="bold", color="#36475a")
+    fig.text(.075, .060,
+             "Colors saturated at +/-0.40 Pa/s for visibility; numerical maxima unchanged.",
+             fontsize=10, color="#36475a")
 
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

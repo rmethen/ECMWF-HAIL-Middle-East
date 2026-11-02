@@ -4,6 +4,7 @@ on:
     branches:
       - feature/gfs-upper-dynamics-experimental
       - feature/gfs-ascent-readable-mobile
+      - feature/gfs-color-and-upper-wind-arrows
     paths:
       - gfs_upper_dynamics.py
       - tests/test_gfs_upper_dynamics.py

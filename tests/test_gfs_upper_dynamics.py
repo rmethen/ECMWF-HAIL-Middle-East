@@ -9,7 +9,7 @@ import numpy as np
 from gfs_upper_dynamics import (
     EARTH_RADIUS_M, EARTH_ROTATION_RAD_S,
     _vector_derivatives, build_url, calculate_diagnostics, run_hours,
-    find_ascent_cores,
+    find_ascent_cores, sample_upper_wind_arrows,
 )
 
 
@@ -68,6 +68,43 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         self.assertIn("--ascent-focus", workflow)
         self.assertIn("gfs_upper_dynamics_status.json", workflow)
         self.assertIn("python gfs_upper_dynamics.py --hours 3,6,12", workflow)
+
+    def test_upper_wind_sampling_preserves_direction_and_reduces_arrows(self):
+        lon = np.arange(40., 61., .25)
+        lat = np.arange(20., 39., .25)
+        uu = np.full((len(lat), len(lon)), -24.0)
+        vv = np.full_like(uu, 9.0)
+        x, y, u, v = sample_upper_wind_arrows(lon, lat, uu, vv)
+        self.assertGreater(len(x), 12)
+        self.assertLess(len(x), 70)  # remains readable on a phone
+        self.assertEqual(len(x), len(y))
+        np.testing.assert_allclose(u, -24.0)
+        np.testing.assert_allclose(v, 9.0)
+        self.assertTrue(np.all((x >= 42) & (x <= 59)))
+        self.assertTrue(np.all((y >= 22) & (y <= 36)))
+
+    def test_upper_wind_sampling_handles_nans_and_descending_latitude(self):
+        lon = np.arange(40., 61., .25)
+        lat = np.arange(38., 20., -.25)
+        uu = np.ones((len(lat), len(lon))) * 20.
+        vv = np.ones_like(uu) * -10.
+        uu[30:50, :] = np.nan
+        x, y, u, v = sample_upper_wind_arrows(lon, lat, uu, vv)
+        self.assertTrue(np.isfinite(u).all())
+        self.assertTrue(np.isfinite(v).all())
+        self.assertTrue(np.all(u == 20.))
+        self.assertTrue(np.all(v == -10.))
+        with self.assertRaises(ValueError):
+            sample_upper_wind_arrows(lon, lat, uu[:, 1:], vv)
+
+    def test_mobile_chart_display_only_contrast_and_full_wind_label(self):
+        from pathlib import Path
+        source = Path("gfs_upper_dynamics.py").read_text(encoding="utf-8")
+        self.assertIn("vmin=-0.40, vcenter=0, vmax=0.40", source)
+        self.assertIn('250 hPa full wind: 20 m/s', source)
+        self.assertIn('FULL wind, not divergent-only wind', source)
+        self.assertIn('diag["u250_ms"]', source)
+        self.assertIn('diag["v250_ms"]', source)
 
     def test_invalid_cycle(self):
         from datetime import timedelta
