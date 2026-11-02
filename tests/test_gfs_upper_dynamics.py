@@ -97,6 +97,37 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         self.assertTrue(str(paths[1]).endswith("_F006.png"))
         self.assertTrue(str(paths[2]).endswith("_F012.png"))
 
+    def test_status_metadata_only_after_complete_sequence(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        cycle = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as folder:
+            status = Path(folder) / "status.json"
+            with patch("gfs_upper_dynamics.download", side_effect=lambda c, h, path: path), \
+                 patch("gfs_upper_dynamics.read_diagnostics",
+                       return_value=(self.lon, self.lat, {"ok": self.zero})), \
+                 patch("gfs_upper_dynamics.render",
+                       side_effect=lambda lon, lat, diag, c, h, dest: dest):
+                run_hours(cycle=cycle, hours=(3, 6, 12), status_output=status)
+            metadata = json.loads(status.read_text(encoding="utf-8"))
+            self.assertEqual(metadata["cycle_utc"], "2026-11-02T12:00:00Z")
+            self.assertEqual(metadata["forecast_hours"], [3, 6, 12])
+            self.assertEqual(metadata["valid_utc"]["6"], "2026-11-02T18:00:00Z")
+            self.assertEqual(metadata["ascent_core_threshold_pa_s"], 0.5)
+
+    def test_failed_download_does_not_replace_existing_status(self):
+        import tempfile
+        from pathlib import Path
+        cycle = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as folder:
+            status = Path(folder) / "status.json"
+            status.write_text("old published cycle", encoding="utf-8")
+            with patch("gfs_upper_dynamics.download", side_effect=OSError("NOAA unavailable")):
+                with self.assertRaises(RuntimeError):
+                    run_hours(cycle=cycle, hours=(3, 6, 12), status_output=status)
+            self.assertEqual(status.read_text(encoding="utf-8"), "old published cycle")
+
     def test_multi_hour_rejects_duplicate_or_excessive_leads(self):
         c = datetime(2026, 11, 1, 18, tzinfo=timezone.utc)
         for hours in ((), (6, 6), (-1,), (121,), tuple(range(6))):
