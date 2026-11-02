@@ -463,7 +463,7 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
             headaxislength=4.9, alpha=0.88, zorder=6,
         )
         ax.quiverkey(
-            arrows, X=0.77, Y=1.025, U=20, coordinates="axes",
+            arrows, X=0.77, Y=1.105, U=20, coordinates="axes",
             label="250 hPa full wind: 20 m/s", labelpos="S",
             fontproperties={"size":9},
         )
