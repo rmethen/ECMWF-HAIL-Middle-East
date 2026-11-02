@@ -119,6 +119,7 @@ def calculate_diagnostics(lon, lat, u250, v250, u500, v500,
     return {
         "div250_1e5_s": div250 * 1e5,
         "upward_omega_pa_s": -(w[0] + w[1] + w[2]) / 3,
+        "rel_vort500_1e5_s": rel_vort500 * 1e5,
         "abs_vort500_1e5_s": (rel_vort500 + coriolis) * 1e5,
     }
 
@@ -180,8 +181,8 @@ def render(lon, lat, diagnostic, cycle, hour, output=PLOT_PATH):
          "RdBu_r", -10, 10),
         ("upward_omega_pa_s", "600–400 hPa mean upward omega (Pa/s; + = ascent)",
          "RdBu", -.8, .8),
-        ("abs_vort500_1e5_s", "500 hPa absolute vorticity (10⁻⁵ s⁻¹)",
-         "YlOrRd", 0, 30),
+        ("rel_vort500_1e5_s", "500 hPa relative vorticity (10⁻⁵ s⁻¹)",
+         "RdBu_r", -10, 10),
     )
     crs = ccrs.PlateCarree()
     fig, axes = plt.subplots(
