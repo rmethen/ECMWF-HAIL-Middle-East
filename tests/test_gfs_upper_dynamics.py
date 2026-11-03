@@ -69,6 +69,58 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         self.assertIn("gfs_upper_dynamics_status.json", workflow)
         self.assertIn("python gfs_upper_dynamics.py --hours 3,6,12", workflow)
 
+    def test_regional_helmholtz_zero_divergence_flow(self):
+        from gfs_regional_irrotational import regional_irrotational_wind
+        lon = np.arange(30., 68.01, .5)
+        lat = np.arange(10., 44.01, .5)
+        shape = (len(lat), len(lon))
+        u = np.full(shape, 19.0)  # eastward wind independent of longitude
+        v = np.zeros(shape)
+        du, dv = regional_irrotational_wind(lon, lat, u, v)
+        np.testing.assert_allclose(du[4:-4,4:-4], 0.0, atol=1e-8)
+        np.testing.assert_allclose(dv[4:-4,4:-4], 0.0, atol=1e-8)
+
+    def test_regional_helmholtz_recovers_smooth_velocity_potential(self):
+        from gfs_regional_irrotational import regional_irrotational_wind
+        from gfs_regional_irrotational import EARTH_RADIUS_M as R
+        lon = np.arange(30., 68.01, .5)
+        lat = np.arange(10., 44.01, .5)
+        xr = np.deg2rad(lon)
+        yr = np.deg2rad(lat)
+        # An exactly zero-boundary velocity potential on the test domain.
+        q = 5e-7 * np.sin(np.pi*(xr[None,:]-xr[0])/(xr[-1]-xr[0])) * \
+            np.sin(np.pi*(yr[:,None]-yr[0])/(yr[-1]-yr[0]))
+        u = R*np.gradient(q, xr, axis=1, edge_order=2) / np.cos(yr)[:,None]
+        v = R*np.gradient(q, yr, axis=0, edge_order=2)
+        uc, vc = regional_irrotational_wind(lon, lat, u, v)
+        interior = (slice(5,-5),slice(5,-5))
+        error = np.sqrt(np.mean((uc[interior]-u[interior])**2 +
+                                (vc[interior]-v[interior])**2))
+        reference = np.sqrt(np.mean(u[interior]**2+v[interior]**2))
+        self.assertLess(error/reference, 0.15)
+
+    def test_regional_helmholtz_reversed_coords_equivalent(self):
+        from gfs_regional_irrotational import regional_irrotational_wind
+        lon = np.arange(30., 68.01, 1.)
+        lat = np.arange(10., 44.01, 1.)
+        u = np.repeat(np.sin(np.deg2rad(lon))[None,:], len(lat), axis=0)*10
+        v = np.broadcast_to(np.cos(np.deg2rad(lat))[:,None]*3, u.shape)
+        uc, vc = regional_irrotational_wind(lon, lat, u, v)
+        uc2, vc2 = regional_irrotational_wind(
+            lon[::-1], lat[::-1], u[::-1,::-1], v[::-1,::-1])
+        np.testing.assert_allclose(uc, uc2[::-1,::-1], atol=1e-8)
+        np.testing.assert_allclose(vc, vc2[::-1,::-1], atol=1e-8)
+
+    def test_regional_helmholtz_rejects_invalid_fields(self):
+        from gfs_regional_irrotational import regional_irrotational_wind
+        lon = np.arange(30., 40.01, 1.)
+        lat = np.arange(10., 20.01, 1.)
+        u = np.ones((len(lat), len(lon)))
+        with self.assertRaises(ValueError):
+            regional_irrotational_wind(lon, lat, u[:,:-1], u)
+        with self.assertRaises(ValueError):
+            regional_irrotational_wind(lon, lat, np.full_like(u, np.nan), u)
+
     def test_upper_wind_sampling_preserves_direction_and_reduces_arrows(self):
         lon = np.arange(40., 61., .25)
         lat = np.arange(20., 39., .25)
@@ -101,8 +153,9 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         from pathlib import Path
         source = Path("gfs_upper_dynamics.py").read_text(encoding="utf-8")
         self.assertIn("vmin=-0.40, vcenter=0, vmax=0.40", source)
-        self.assertIn('250 hPa full wind: 20 m/s', source)
-        self.assertIn('FULL wind, not divergent-only wind', source)
+        self.assertIn('REGIONAL irrotational: 5 m/s', source)
+        self.assertIn('REGIONAL irrotational wind', source)
+        self.assertIn('regional_irrotational_wind(', source)
         self.assertIn('diag["u250_ms"]', source)
         self.assertIn('diag["v250_ms"]', source)
 

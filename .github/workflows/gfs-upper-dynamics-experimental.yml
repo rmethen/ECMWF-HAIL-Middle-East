@@ -5,8 +5,10 @@ on:
       - feature/gfs-upper-dynamics-experimental
       - feature/gfs-ascent-readable-mobile
       - feature/gfs-color-and-upper-wind-arrows
+      - feature/gfs-regional-irrotational-250
     paths:
       - gfs_upper_dynamics.py
+      - gfs_regional_irrotational.py
       - tests/test_gfs_upper_dynamics.py
       - GFS_UPPER_DYNAMICS_EXPERIMENT.md
       - .github/workflows/gfs-upper-dynamics-experimental.yml

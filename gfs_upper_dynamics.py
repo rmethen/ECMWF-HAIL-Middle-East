@@ -399,8 +399,34 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
         raise ValueError("Omega must be on the GFS lat/lon grid")
     if "u250_ms" not in diagnostic or "v250_ms" not in diagnostic:
         raise ValueError("Full GFS 250-hPa u/v wind fields required for arrows")
-    arrow_lon, arrow_lat, arrow_u, arrow_v = sample_upper_wind_arrows(
+    # Solve a bounded-domain spherical velocity-potential inversion on the
+    # full enlarged NOAA GRIB region, then only plot its central Gulf area.
+    # This is a regional Helmholtz approximation, not global spectral winds.
+    from gfs_regional_irrotational import regional_irrotational_wind
+    uchi, vchi = regional_irrotational_wind(
         lon, lat, diagnostic["u250_ms"], diagnostic["v250_ms"])
+    # Do not render sub-0.6 m/s potential winds as microscopic arrowheads.
+    arrow_lon, arrow_lat, arrow_u, arrow_v = sample_upper_wind_arrows(
+        lon, lat, uchi, vchi)
+    useful = np.hypot(arrow_u, arrow_v) >= 0.6
+    arrow_lon, arrow_lat = arrow_lon[useful], arrow_lat[useful]
+    arrow_u, arrow_v = arrow_u[useful], arrow_v[useful]
+
+    # Compare the derived component with real GFS full-wind divergence
+    # in the display interior, far from imposed Poisson boundaries.
+    full_div, _ = _vector_derivatives(
+        lon, lat, diagnostic["u250_ms"], diagnostic["v250_ms"])
+    irro_div, irro_vort = _vector_derivatives(lon, lat, uchi, vchi)
+    xgrid, ygrid = np.meshgrid(lon, lat)
+    interior = ((xgrid >= 42) & (xgrid <= 59) &
+                (ygrid >= 22) & (ygrid <= 36))
+    full_rms = float(np.sqrt(np.mean(full_div[interior]**2)))
+    error_rms = float(np.sqrt(np.mean(
+        (irro_div[interior]-full_div[interior])**2)))
+    curl_rms = float(np.sqrt(np.mean(irro_vort[interior]**2)))
+    print(f"Regional Helmholtz QC: full-divergence RMS {full_rms:.4g}/s; "
+          f"reconstruction RMS {error_rms:.4g}/s; potential-wind curl "
+          f"RMS {curl_rms:.4g}/s", flush=True)
 
     # Reduce display noise modestly; dots and location labels use RAW field.
     sigmas = (0.3 / np.median(np.abs(np.diff(lat))),
@@ -453,18 +479,18 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
                         bbox={"facecolor": "white", "edgecolor": "none",
                               "alpha": 0.85, "pad": 1.5}, zorder=9)
 
-    # Sparse full horizontal 250-hPa winds. NOT divergence-only or
-    # irrotational-wind vectors; these show actual model wind direction.
+    # Sparse bounded-Helmholtz potential-gradient wind component at 250 hPa;
+    # NOT global spectral irrotational winds and NOT the full flow.
     if len(arrow_lon):
         arrows = ax.quiver(
             arrow_lon, arrow_lat, arrow_u, arrow_v, transform=crs,
-            color="#192d47", pivot="middle", scale=650,
-            width=0.0038, headwidth=4.2, headlength=5.6,
+            color="#192d47", pivot="middle", scale=85,
+            width=0.005, headwidth=4.2, headlength=5.6,
             headaxislength=4.9, alpha=0.88, zorder=6,
         )
         ax.quiverkey(
-            arrows, X=0.77, Y=1.105, U=20, coordinates="axes",
-            label="250 hPa full wind: 20 m/s", labelpos="S",
+            arrows, X=0.77, Y=1.105, U=5, coordinates="axes",
+            label="REGIONAL irrotational: 5 m/s", labelpos="S",
             fontproperties={"size":9},
         )
 
@@ -513,10 +539,10 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
              "Red outlines: 0.25 (dashed) / 0.50 (solid) Pa/s ascent.",
              fontsize=11, color="#3c4b5a")
     fig.text(.075, .087,
-             "250 hPa arrows = FULL wind, not divergent-only wind. Model forecast, not rainfall.",
+             "250 hPa arrows: REGIONAL irrotational wind (bounded Helmholtz estimate).",
              fontsize=10, weight="bold", color="#36475a")
     fig.text(.075, .060,
-             "Colors saturated at +/-0.40 Pa/s for visibility; numerical maxima unchanged.",
+             "Not global Albany wind; boundary-sensitive. Colors at +/-0.40 Pa/s.",
              fontsize=10, color="#36475a")
 
     output = Path(output)
@@ -597,6 +623,8 @@ def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None
             "forecast_hours": list(hours),
             "valid_utc": {str(h): (candidate + timedelta(hours=h)).isoformat().replace("+00:00", "Z")
                           for h in hours},
+            "vector_diagnostic": "regional_bounded_helmholtz_potential_wind_250_hpa",
+            "vector_caveat": "finite-domain zero-potential boundary approximation; not global",
             "ascent_core_threshold_pa_s": ASCENT_CORE_THRESHOLD_PA_S,
             "ascent_local_max_window_grid_points": ASCENT_CORE_NEIGHBORHOOD,
             "product": "Experimental upper-air ascent cores (not observed rain)",

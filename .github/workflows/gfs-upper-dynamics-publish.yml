@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'gfs_upper_dynamics.py'
+      - 'gfs_regional_irrotational.py'
       - 'tests/test_gfs_upper_dynamics.py'
       - 'index.html'
       - '.github/workflows/gfs-upper-dynamics-publish.yml'
