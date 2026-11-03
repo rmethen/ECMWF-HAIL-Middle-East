@@ -67,7 +67,7 @@ We now prototype the **regional Helmholtz gradient (irrotational/potential) comp
 - In the full domain **30–68°E, 10–44°N**, calculate spherical horizontal divergence of the GFS 250-hPa U/V field.
 - Solve the spherical Poisson equation `Laplacian(chi) = divergence` on the enlarged model grid with **zero velocity-potential at the rectangular boundary** using SciPy sparse linear algebra. The resulting `gradient(chi)` is irrotational to numerical precision away from grid edges.
 - Draw only the interior Gulf view **42–59°E, 22–36°N**. A broad buffer is intentional because finite-domain boundary assumptions can strongly affect the arrows.
-- Use a **10 m/s vector key** for regional potential winds, which differ substantially from the full-wind direction and magnitude. Red/blue omega and the red/yellow cores are not modified.
+- Use a **5 m/s vector key** for regional potential winds, which differ substantially from the full-wind direction and magnitude. Red/blue omega and the red/yellow cores are not modified.
 - The solution is non-unique without specified boundary conditions. The imposed Dirichlet potential boundary can suppress real large-scale harmonic/divergent components, so **do not treat these arrows as globally valid upper-air divergence vectors or operational evidence of convection**.
 - Offline numerical gates include uniform non-divergent flow, recovery of a known synthetic velocity potential, reversed coordinate order, and invalid input rejection. After passing them, examine real-data Gulf maps and compare against published large-scale divergence patterns. Only use an operational/global method after global winds and a validated spectral Helmholtz solver are available.
 
