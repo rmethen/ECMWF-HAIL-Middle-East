@@ -153,7 +153,7 @@ class GFSUpperDynamicsTests(unittest.TestCase):
         from pathlib import Path
         source = Path("gfs_upper_dynamics.py").read_text(encoding="utf-8")
         self.assertIn("vmin=-0.40, vcenter=0, vmax=0.40", source)
-        self.assertIn('REGIONAL irrotational: 10 m/s', source)
+        self.assertIn('REGIONAL irrotational: 5 m/s', source)
         self.assertIn('REGIONAL irrotational wind', source)
         self.assertIn('regional_irrotational_wind(', source)
         self.assertIn('diag["u250_ms"]', source)
