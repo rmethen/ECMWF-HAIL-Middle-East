@@ -9,8 +9,12 @@ on:
       - 'index.html'
       - '.github/workflows/gfs-upper-dynamics-publish.yml'
   schedule:
-    # 4 runs per UTC day, after 00/06/12/18 GFS cycles have time to publish.
-    - cron: '38 4,10,16,22 * * *'
+    # Try each cycle sooner, then retry as NOAA progressively publishes f003,
+    # f006 and f012. The no-newer-cycle gate prevents redundant commits.
+    # UTC 03:50 / 04:20 / 04:50, repeated every 6 hours.
+    - cron: '50 3,9,15,21 * * *'
+    - cron: '20 4,10,16,22 * * *'
+    - cron: '50 4,10,16,22 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -38,7 +42,7 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_gfs_upper_dynamics.py' -v
       - name: Generate three same-cycle NOAA GFS maps and validated status
         run: |
-          python gfs_upper_dynamics.py --hours 3,6,12 --status-output output/gfs_upper_dynamics_status.json --ascent-focus
+          python gfs_upper_dynamics.py --hours 3,6,12 --status-output output/gfs_upper_dynamics_status.json --ascent-focus --only-newer
           test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F003.png
           test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F006.png
           test -s output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL_F012.png

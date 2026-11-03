@@ -6,6 +6,7 @@ on:
       - feature/gfs-ascent-readable-mobile
       - feature/gfs-color-and-upper-wind-arrows
       - feature/gfs-regional-irrotational-250
+      - feature/gfs-early-retry-new-cycle
     paths:
       - gfs_upper_dynamics.py
       - gfs_regional_irrotational.py

@@ -552,7 +552,7 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
     return output
 
 
-def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None, ascent_focus=False):
+def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None, ascent_focus=False, only_newer=False):
     """Render multiple leads from ONE complete GFS initialization.
 
     Cycle rollback is all-or-none so the evolution has consistent run time.
@@ -570,8 +570,33 @@ def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None
     else:
         candidates = [cycle]
 
+    # Scheduled retries should publish only a genuinely newer GFS cycle.
+    # If the latest available candidate is the already-published cycle, exit
+    # without touching images or the timestamp in the status JSON.
+    previous_cycle = None
+    if only_newer:
+        if status_output is None:
+            raise ValueError("--only-newer requires --status-output")
+        previous_status = Path(status_output)
+        if previous_status.exists():
+            try:
+                previous = json.loads(previous_status.read_text(encoding="utf-8"))
+                previous_cycle = datetime.fromisoformat(
+                    previous["cycle_utc"].replace("Z", "+00:00"))
+                if previous_cycle.utcoffset() != timedelta(0):
+                    raise ValueError("previous GFS cycle must be UTC")
+            except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
+                raise ValueError(f"Invalid previous GFS status: {exc}") from exc
+
     last_error = None
     for candidate in candidates:
+        if previous_cycle is not None and candidate <= previous_cycle:
+            print(
+                f"No newer complete GFS run available after "
+                f"{previous_cycle:%Y-%m-%d %HZ}; keeping published maps.",
+                flush=True,
+            )
+            return []
         sequence = []
         try:
             for hour in hours:
@@ -649,6 +674,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", default=str(PLOT_PATH))
     parser.add_argument("--status-output", help="Write JSON cycle metadata after all lead-time images succeed")
     parser.add_argument("--ascent-focus", action="store_true", help="Also render a large single-panel ascent map for phones")
+    parser.add_argument("--only-newer", action="store_true", help="Skip existing cycle during scheduled publication retries")
     opts = parser.parse_args()
     c = (datetime.strptime(opts.cycle, "%Y%m%d%H").replace(tzinfo=timezone.utc)
          if opts.cycle else None)
@@ -657,6 +683,6 @@ if __name__ == "__main__":
             parser.error("--source is only supported with --hour (single lead)")
         run_hours(cycle=c, hours=tuple(int(h.strip()) for h in opts.hours.split(",")),
                   output=opts.output, status_output=opts.status_output,
-                  ascent_focus=opts.ascent_focus)
+                  ascent_focus=opts.ascent_focus, only_newer=opts.only_newer)
     else:
         run(cycle=c, hour=opts.hour, source=opts.source, output=opts.output)

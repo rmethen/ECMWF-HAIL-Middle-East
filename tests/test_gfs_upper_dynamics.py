@@ -259,6 +259,40 @@ class GFSUpperDynamicsTests(unittest.TestCase):
                     run_hours(cycle=cycle, hours=(3, 6, 12), status_output=status)
             self.assertEqual(json.loads(status.read_text(encoding="utf-8")), latest)
 
+    def test_scheduled_retry_skips_published_cycle_before_any_download(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        cycle = datetime(2026, 11, 2, 18, tzinfo=timezone.utc)
+        with tempfile.TemporaryDirectory() as folder:
+            status = Path(folder) / "status.json"
+            status.write_text(json.dumps({"cycle_utc": "2026-11-02T18:00:00Z"}),
+                              encoding="utf-8")
+            with patch("gfs_upper_dynamics.download") as download, \
+                 patch("gfs_upper_dynamics.render") as render:
+                output = run_hours(cycle=cycle, hours=(3, 6, 12),
+                                   status_output=status, only_newer=True)
+            self.assertEqual(output, [])
+            download.assert_not_called()
+            render.assert_not_called()
+            self.assertEqual(
+                json.loads(status.read_text(encoding="utf-8"))["cycle_utc"],
+                "2026-11-02T18:00:00Z")
+
+    def test_only_newer_requires_status_file_location(self):
+        cycle = datetime(2026, 11, 2, 18, tzinfo=timezone.utc)
+        with self.assertRaises(ValueError):
+            run_hours(cycle=cycle, only_newer=True)
+
+    def test_early_retry_cron_is_before_old_schedule_and_has_retries(self):
+        from pathlib import Path
+        yaml = Path(".github/workflows/gfs-upper-dynamics-publish.yml").read_text(
+            encoding="utf-8")
+        self.assertIn("cron: '50 3,9,15,21 * * *'", yaml)
+        self.assertIn("cron: '20 4,10,16,22 * * *'", yaml)
+        self.assertIn("cron: '50 4,10,16,22 * * *'", yaml)
+        self.assertIn("--only-newer", yaml)
+
     def test_failed_download_does_not_replace_existing_status(self):
         import tempfile
         from pathlib import Path
