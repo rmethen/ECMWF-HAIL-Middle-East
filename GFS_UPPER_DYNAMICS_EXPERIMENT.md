@@ -60,6 +60,17 @@ The enlarged Gulf-only map now uses display normalization **−0.40 to +0.40 Pa/
 
 The arrow overlay is a sparse ~2.5-degree sample of the authentic NOAA GFS **250-hPa full horizontal wind vectors** (`u250_ms`, `v250_ms`) already contained in the downloaded GRIB. The direction and speed are measured in m/s; the key displays 20 m/s. These are **not** irrotational (divergent-component) vectors, and they should not be interpreted as direct proof of upper-level divergence or vertical ascent. The 250-hPa full-wind divergence calculated separately remains on the original three-panel diagnostic graphic. The mobile view always distinguishes this limitation in the label.
 
+## Experimental bounded-domain irrotational winds at 250 hPa
+
+We now prototype the **regional Helmholtz gradient (irrotational/potential) component** using only real NOAA GFS pressure-level winds at 250 hPa. This is NOT a global spectral Helmholtz decomposition and does NOT exactly reproduce the University at Albany irrotational-wind product.
+
+- In the full domain **30–68°E, 10–44°N**, calculate spherical horizontal divergence of the GFS 250-hPa U/V field.
+- Solve the spherical Poisson equation `Laplacian(chi) = divergence` on the enlarged model grid with **zero velocity-potential at the rectangular boundary** using SciPy sparse linear algebra. The resulting `gradient(chi)` is irrotational to numerical precision away from grid edges.
+- Draw only the interior Gulf view **42–59°E, 22–36°N**. A broad buffer is intentional because finite-domain boundary assumptions can strongly affect the arrows.
+- Use a **10 m/s vector key** for regional potential winds, which differ substantially from the full-wind direction and magnitude. Red/blue omega and the red/yellow cores are not modified.
+- The solution is non-unique without specified boundary conditions. The imposed Dirichlet potential boundary can suppress real large-scale harmonic/divergent components, so **do not treat these arrows as globally valid upper-air divergence vectors or operational evidence of convection**.
+- Offline numerical gates include uniform non-divergent flow, recovery of a known synthetic velocity potential, reversed coordinate order, and invalid input rejection. After passing them, examine real-data Gulf maps and compare against published large-scale divergence patterns. Only use an operational/global method after global winds and a validated spectral Helmholtz solver are available.
+
 ## Safety gate and next steps
 
 The experimental workflow runs offline tests on the feature branch and attempts a NOAA same-cycle +3/+6/+12 h smoke test, uploading only a short-lived GitHub Actions image artifact. It has **read-only contents permissions**, never commits generated data, never modifies `main`, and never overwrites existing ECMWF hail, SHIP, Kelvin, or flood products.
