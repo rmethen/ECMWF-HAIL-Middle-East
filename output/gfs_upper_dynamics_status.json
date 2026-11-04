@@ -1,20 +1,27 @@
 {
   "model": "NOAA GFS 0.25 degree",
-  "cycle_utc": "2026-11-03T18:00:00Z",
-  "generated_utc": "2026-11-03T21:49:33.476193Z",
+  "cycle_utc": "2026-11-04T06:00:00Z",
+  "generated_utc": "2026-11-04T11:38:04.833950Z",
   "forecast_hours": [
     3,
     6,
     12
   ],
   "valid_utc": {
-    "3": "2026-11-03T21:00:00Z",
-    "6": "2026-11-04T00:00:00Z",
-    "12": "2026-11-04T06:00:00Z"
+    "3": "2026-11-04T09:00:00Z",
+    "6": "2026-11-04T12:00:00Z",
+    "12": "2026-11-04T18:00:00Z"
   },
   "vector_diagnostic": "regional_bounded_helmholtz_potential_wind_250_hpa",
   "vector_caveat": "finite-domain zero-potential boundary approximation; not global",
   "ascent_core_threshold_pa_s": 0.5,
   "ascent_local_max_window_grid_points": 9,
-  "product": "Experimental upper-air ascent cores (not observed rain)"
+  "product": "Experimental upper-air ascent cores (not observed rain)",
+  "ascent_map_bounds": [
+    25,
+    65,
+    12,
+    44
+  ],
+  "ascent_map_region": "Middle East"
 }
