@@ -21,7 +21,7 @@ NOMADS = "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl"
 EARTH_RADIUS_M = 6_371_000.0
 EARTH_ROTATION_RAD_S = 7.2921159e-5
 # Larger download region keeps finite-difference boundaries away from the map.
-FETCH_BOUNDS = (30, 68, 10, 44)  # west, east, south, north (degrees)
+FETCH_BOUNDS = (15, 75, 5, 52)  # west, east, south, north (degrees)
 PLOT_BOUNDS = (35, 64, 16, 38)
 GRIB_PATH = Path("data/gfs_upper_dynamics_f006.grib2")
 PLOT_PATH = Path("output/GFS_UPPER_DYNAMICS_KUWAIT_GULF_EXPERIMENTAL.png")
@@ -379,7 +379,7 @@ def sample_upper_wind_arrows(lon, lat, u, v, bounds=(42, 59, 22, 36),
 
 
 def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
-    """Large single-panel Gulf ascent image intended to be readable on a phone.
+    """Large single-panel Middle East ascent image intended to be readable on a phone.
 
     Original three-panel diagnostics remain available. All annotations refer
     to *forecast* pressure-vertical motion, not actual rainfall observations.
@@ -407,7 +407,7 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
         lon, lat, diagnostic["u250_ms"], diagnostic["v250_ms"])
     # Do not render sub-0.6 m/s potential winds as microscopic arrowheads.
     arrow_lon, arrow_lat, arrow_u, arrow_v = sample_upper_wind_arrows(
-        lon, lat, uchi, vchi)
+        lon, lat, uchi, vchi, bounds=(25, 65, 12, 44), spacing_deg=4.0)
     useful = np.hypot(arrow_u, arrow_v) >= 0.6
     arrow_lon, arrow_lat = arrow_lon[useful], arrow_lat[useful]
     arrow_u, arrow_v = arrow_u[useful], arrow_v[useful]
@@ -418,8 +418,8 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
         lon, lat, diagnostic["u250_ms"], diagnostic["v250_ms"])
     irro_div, irro_vort = _vector_derivatives(lon, lat, uchi, vchi)
     xgrid, ygrid = np.meshgrid(lon, lat)
-    interior = ((xgrid >= 42) & (xgrid <= 59) &
-                (ygrid >= 22) & (ygrid <= 36))
+    interior = ((xgrid >= 25) & (xgrid <= 65) &
+                (ygrid >= 12) & (ygrid <= 44))
     full_rms = float(np.sqrt(np.mean(full_div[interior]**2)))
     error_rms = float(np.sqrt(np.mean(
         (irro_div[interior]-full_div[interior])**2)))
@@ -440,7 +440,7 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
     # Aspect ratio appropriate to Kuwait/Gulf at page width on mobile.
     fig = plt.figure(figsize=(9, 10.5), facecolor="white")
     ax = fig.add_axes([0.07, 0.20, 0.81, 0.63], projection=crs)
-    extent = (42, 59, 22, 36)
+    extent = (25, 65, 12, 44)
     ax.set_extent(extent, crs=crs)
     # High-contrast display only: saturation does not alter omega values,
     # red-core threshold, or true computed forecast probabilities.
@@ -501,6 +501,10 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
         ("Basra", 47.78, 30.51), ("KUWAIT", 47.98, 29.38),
         ("Doha", 51.53, 25.29), ("Dubai", 55.27, 25.20),
         ("Riyadh", 46.71, 24.71), ("Bushehr", 50.84, 28.92),
+        ("Cairo", 31.24, 30.04), ("Ankara", 32.86, 39.93),
+        ("Damascus", 36.28, 33.51), ("Baghdad", 44.37, 33.32),
+        ("Tehran", 51.39, 35.69), ("Sanaa", 44.21, 15.35),
+        ("Muscat", 58.41, 23.59),
     ):
         ax.plot(x, y, "k*" if name == "KUWAIT" else "ko",
                 markersize=10 if name == "KUWAIT" else 3.5,
@@ -513,14 +517,14 @@ def render_ascent_focus(lon, lat, diagnostic, cycle, hour, output):
                     color="#1b2631",
                     bbox={"facecolor": "white", "edgecolor": "none",
                           "alpha": 0.78, "pad": 0.8}, zorder=9)
-    ax.set_xticks(np.arange(42, 60, 3), crs=crs)
-    ax.set_yticks(np.arange(22, 37, 2), crs=crs)
+    ax.set_xticks(np.arange(25, 66, 5), crs=crs)
+    ax.set_yticks(np.arange(12, 45, 4), crs=crs)
     ax.tick_params(labelsize=10)
     ax.grid(color="#607283", alpha=.22)
 
     valid = cycle + timedelta(hours=hour)
     valid_kwt = valid + timedelta(hours=3)
-    fig.text(.07, .962, "GFS | KUWAIT & NORTH GULF", fontsize=21,
+    fig.text(.07, .962, "GFS | MIDDLE EAST", fontsize=21,
              weight="bold", color="#172b40")
     fig.text(.07, .925, "600–400 hPa ascent | STRONGER RED = RISING AIR",
              fontsize=13, weight="bold", color="#a40c25")
@@ -653,6 +657,8 @@ def run_hours(cycle=None, hours=(3, 6, 12), output=PLOT_PATH, status_output=None
             "ascent_core_threshold_pa_s": ASCENT_CORE_THRESHOLD_PA_S,
             "ascent_local_max_window_grid_points": ASCENT_CORE_NEIGHBORHOOD,
             "product": "Experimental upper-air ascent cores (not observed rain)",
+            "ascent_map_bounds": [25, 65, 12, 44],
+            "ascent_map_region": "Middle East",
         }
         temporary = status_path.with_suffix(".tmp")
         try:
@@ -686,3 +692,4 @@ if __name__ == "__main__":
                   ascent_focus=opts.ascent_focus, only_newer=opts.only_newer)
     else:
         run(cycle=c, hour=opts.hour, source=opts.source, output=opts.output)
+

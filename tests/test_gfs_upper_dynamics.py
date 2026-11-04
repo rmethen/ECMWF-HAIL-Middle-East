@@ -31,8 +31,8 @@ class GFSUpperDynamicsTests(unittest.TestCase):
             self.assertEqual(params[f"var_{variable}"], ["on"])
         for lev in (250, 400, 500, 600):
             self.assertEqual(params[f"lev_{lev}_mb"], ["on"])
-        self.assertEqual(params["leftlon"], ["30"])
-        self.assertEqual(params["rightlon"], ["68"])
+        self.assertEqual(params["leftlon"], ["15"])
+        self.assertEqual(params["rightlon"], ["75"])
 
     def test_mobile_focus_creates_three_extra_map_images(self):
         cycle = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
@@ -367,3 +367,4 @@ class GFSUpperDynamicsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
