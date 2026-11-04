@@ -1,9 +1,9 @@
 {
-  "updated_utc": "2026-11-04T01:20:02.569657+00:00",
+  "updated_utc": "2026-11-04T17:12:40.660311+00:00",
   "state": "ready",
   "system": "ECMWF ENS",
   "available_members": 50,
   "target_members": 50,
   "forecast_hour": 72,
-  "cycle_utc": "2026-11-03T18:00:00+00:00"
+  "cycle_utc": "2026-11-04T06:00:00+00:00"
 }
