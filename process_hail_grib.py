@@ -24,9 +24,9 @@ def open_field(short_name):
     )
 
 
-def open_surface_field(short_name):
+def open_surface_field(short_name, path=SURFACE_GRIB_FILE):
     ds = xr.open_dataset(
-        SURFACE_GRIB_FILE,
+        path,
         engine="cfgrib",
         backend_kwargs={
             "filter_by_keys": {"shortName": short_name},

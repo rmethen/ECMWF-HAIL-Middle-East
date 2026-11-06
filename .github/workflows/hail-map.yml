@@ -8,6 +8,7 @@ on:
       - 'process_hail_grib.py'
       - 'gfs_hail_support.py'
       - 'make_hail_map.py'
+      - 'make_snow_map.py'
       - 'combined_hail_map.py'
       - 'lightning_environment_index.py'
       - 'make_lightning_environment_map.py'
