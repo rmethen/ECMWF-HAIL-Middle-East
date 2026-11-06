@@ -47,7 +47,7 @@ jobs:
           pip install numpy scipy matplotlib cartopy ecmwf-opendata xarray cfgrib eccodes
       - name: Test ECMWF real data download
         run: |
-          python ecmwf_hail_data.py
+          python ecmwf_hail_data.py ${{ github.event_name == 'pull_request' && '--snow-preview' || '' }}
       - name: Process ECMWF GRIB diagnostics
         if: github.event_name != 'pull_request'
         run: |

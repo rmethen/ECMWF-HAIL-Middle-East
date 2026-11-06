@@ -1,4 +1,5 @@
 """Download ECMWF Open Data fields for the severe-weather diagnostics."""
+import argparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import json
@@ -15,7 +16,7 @@ SNOWFALL_FILE = Path("data/ecmwf_snowfall.grib2")
 SURFACE_PARAMS = ["2t", "2d", "10u", "10v", "msl", "tp", "mucape"]
 
 
-def download_ecmwf_hail_fields():
+def download_ecmwf_hail_fields(snow_preview=False):
     Path("data").mkdir(exist_ok=True)
     pressure_target = Path("data/ecmwf_hail_0_72h.grib2")
     surface_target = Path("data/ecmwf_surface_0_72h.grib2")
@@ -30,15 +31,18 @@ def download_ecmwf_hail_fields():
         if now - cycle < timedelta(hours=6) or now - cycle > timedelta(hours=24):
             continue
         steps = SHORT_STEPS if cycle.hour in (6, 18) else STEPS
+        if snow_preview:
+            steps = [36, 42, 48]
         for source in ("azure", "ecmwf"):
             try:
                 client = Client(source=source, model="ifs", resol="0p25")
                 common = dict(date=cycle.strftime("%Y%m%d"), time=cycle.hour,
                               type="fc", stream="oper", step=steps,
                               area=[NORTH, WEST, SOUTH, EAST])
-                client.retrieve(param=PRESSURE_PARAMS, levelist=LEVELS,
+                client.retrieve(param=["t", "gh"] if snow_preview else PRESSURE_PARAMS,
+                                levelist=[1000, 850, 500] if snow_preview else LEVELS,
                                 target=str(pressure_target) + ".part", **common)
-                client.retrieve(param=SURFACE_PARAMS,
+                client.retrieve(param=["2t", "tp"] if snow_preview else SURFACE_PARAMS,
                                 target=str(surface_target) + ".part", **common)
                 Path(str(pressure_target) + ".part").replace(pressure_target)
                 Path(str(surface_target) + ".part").replace(surface_target)
@@ -60,5 +64,7 @@ def download_ecmwf_hail_fields():
 
 
 if __name__ == "__main__":
-    download_ecmwf_hail_fields()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--snow-preview", action="store_true")
+    download_ecmwf_hail_fields(snow_preview=parser.parse_args().snow_preview)
 
