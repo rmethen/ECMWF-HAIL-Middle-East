@@ -1,4 +1,5 @@
 """ECMWF snow-environment map with thickness and upper-air temperature contours."""
+import argparse
 from pathlib import Path
 import numpy as np
 import matplotlib
@@ -15,6 +16,9 @@ OUT = Path("output/ECMWF_SNOW_ENVIRONMENT_MIDDLE_EAST_LATEST.png")
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--require-snowfall", action="store_true")
+    args = parser.parse_args()
     gh = open_field("gh")["gh"]
     temp = open_field("t")["t"]
     t2m = open_surface_field("2t")
@@ -39,6 +43,9 @@ def main():
                                           prepend=sf.values[:1] * 1000), 0)
         except Exception as exc:
             print(f"Snowfall layer unavailable: {exc}")
+
+    if args.require_snowfall and (snowfall is None or not np.isfinite(snowfall).any()):
+        raise RuntimeError("No usable ECMWF snowfall data for this cycle")
 
     regional = ((gh.latitude.values[:, None] >= 10) &
                 (gh.latitude.values[:, None] <= 45) &

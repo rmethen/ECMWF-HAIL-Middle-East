@@ -12,11 +12,17 @@ on:
       - 'combined_hail_map.py'
       - 'lightning_environment_index.py'
       - 'make_lightning_environment_map.py'
+  pull_request:
+    paths:
+      - '.github/workflows/hail-map.yml'
+      - 'ecmwf_hail_data.py'
+      - 'process_hail_grib.py'
+      - 'make_snow_map.py'
   schedule:
     - cron: '17 9,12,21,0 * * *'
   workflow_dispatch:
 concurrency:
-  group: severe-weather-maps
+  group: severe-weather-maps-${{ github.event.pull_request.number || 'production' }}
   cancel-in-progress: false
 permissions:
   contents: write
@@ -43,26 +49,39 @@ jobs:
         run: |
           python ecmwf_hail_data.py
       - name: Process ECMWF GRIB diagnostics
+        if: github.event_name != 'pull_request'
         run: |
           python process_hail_chunks.py
       - name: Generate Middle East hail map
+        if: github.event_name != 'pull_request'
         run: |
           python make_hail_map.py
           python make_hail_map_wbz_1500_3000.py
       - name: Generate time-matched ECMWF and GFS agreement map
+        if: github.event_name != 'pull_request'
         continue-on-error: true
         run: python combined_hail_map.py
       - name: Generate Middle East thunderstorm map
+        if: github.event_name != 'pull_request'
         run: |
           python make_thunderstorm_map.py
           python make_lightning_environment_map.py
       - name: Generate Middle East dust and wall-storm map
+        if: github.event_name != 'pull_request'
         run: |
           python make_dust_map.py
       - name: Generate Middle East snow environment map
         run: |
-          python make_snow_map.py
+          python make_snow_map.py ${{ github.event_name == 'pull_request' && '--require-snowfall' || '' }}
+      - name: Upload verified snowfall preview
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecmwf-snowfall-preview
+          path: output/ECMWF_SNOW_ENVIRONMENT_MIDDLE_EAST_LATEST.png
+          if-no-files-found: error
       - name: Commit generated map
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
