@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 concurrency:
   group: severe-weather-maps-${{ github.event.pull_request.number || 'production' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: write
 jobs:
