@@ -94,16 +94,23 @@ def main():
         else:
             levels = [minimum, 1, 2, 5, 10, 50]
             cmap = ListedColormap(["#e8f4ff", "#a9d7f9", "#65b5ec", "#277bc5", "#17468c"])
+            if index == 2:
+                levels = [minimum, 0.25, 0.5, 1, 2, 5, 10]
+                cmap = ListedColormap(["#83cde0", "#31a8cd", "#2273b6", "#5147a9",
+                                       "#893aa9", "#bd387c"])
+                cmap.set_over("#821244")
             norm = BoundaryNorm(levels, cmap.N)
             mesh = ax.pcolormesh(lon, lat, np.where(values >= minimum, values, np.nan),
                                  cmap=cmap, norm=norm, transform=projection)
             fig.colorbar(mesh, ax=ax, orientation="horizontal", pad=0.05,
-                         ticks=levels[:-1], extend="max", label="mm")
+                         ticks=levels if index == 2 else levels[:-1],
+                         extend="max", label="mm")
         for field, contour_levels, color, style in fields:
             present = [v for v in contour_levels if np.nanmin(field) < v < np.nanmax(field)]
             if present:
                 cs = ax.contour(lon, lat, field, levels=present, colors=color,
-                                linestyles=style, linewidths=0.75, transform=projection)
+                                linestyles=style, linewidths=0.4 if index == 2 else 0.75,
+                                alpha=0.45 if index == 2 else 1, transform=projection)
                 ax.clabel(cs, fmt="%g", fontsize=6, inline=True)
         ax.plot(37, 40.5, marker="x", color="black", markersize=6, transform=projection)
         ax.set_title(label + status, fontsize=11)
