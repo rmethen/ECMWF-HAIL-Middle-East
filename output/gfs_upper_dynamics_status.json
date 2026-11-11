@@ -1,16 +1,16 @@
 {
   "model": "NOAA GFS 0.25 degree",
-  "cycle_utc": "2026-11-10T18:00:00Z",
-  "generated_utc": "2026-11-10T21:49:44.798977Z",
+  "cycle_utc": "2026-11-11T06:00:00Z",
+  "generated_utc": "2026-11-11T11:29:05.898603Z",
   "forecast_hours": [
     3,
     6,
     12
   ],
   "valid_utc": {
-    "3": "2026-11-10T21:00:00Z",
-    "6": "2026-11-11T00:00:00Z",
-    "12": "2026-11-11T06:00:00Z"
+    "3": "2026-11-11T09:00:00Z",
+    "6": "2026-11-11T12:00:00Z",
+    "12": "2026-11-11T18:00:00Z"
   },
   "vector_diagnostic": "regional_bounded_helmholtz_potential_wind_250_hpa",
   "vector_caveat": "finite-domain zero-potential boundary approximation; not global",
