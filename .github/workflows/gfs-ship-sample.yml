@@ -1,0 +1,51 @@
+name: GFS SHIP real-data smoke test
+on:
+  pull_request:
+    paths:
+      - 'download_gfs_ship_sample.py'
+      - 'render_gfs_ship_input_diagnostic.py'
+      - 'run_gfs_ship_real.py'
+      - 'gfs_ship_surface.py'
+      - 'gfs_ship_inputs.py'
+      - '.github/workflows/gfs-ship-sample.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download one real GFS +6h GRIB
+        run: python download_gfs_ship_sample.py
+      - name: Inspect GRIB records
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libeccodes-tools
+          grib_ls -p shortName,typeOfLevel,level data/gfs_ship_f006.grib2 | head -70
+      - name: Install GRIB and plotting libraries
+        run: python -m pip install numpy xarray cfgrib eccodes matplotlib
+      - name: Render genuine GFS input diagnostic (not SHIP)
+        run: python render_gfs_ship_input_diagnostic.py
+      - name: Inspect surface fields
+        run: grib_ls -p shortName,typeOfLevel,level data/gfs_ship_surface_f006.grib2
+      - name: Compute first real SHIP map
+        run: |
+          python -m pip install metpy
+          python run_gfs_ship_real.py
+      - name: Preserve raw sample for analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: gfs-ship-f006-raw-sample
+          path: |
+            data/gfs_ship_f006.grib2
+            data/gfs_ship_surface_f006.grib2
+            output/GFS_SHIP_INDEX_PREVIEW.png
+            output/GFS_SHIP_INPUT_DIAGNOSTIC_F006.png
+          retention-days: 3
